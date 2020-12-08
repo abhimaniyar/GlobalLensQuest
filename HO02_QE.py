@@ -64,7 +64,8 @@ class lensing_estimator(object):
         max value for l1 and l2: taken to be same
         """
         if XY == 'TT':
-            return self.cmb.lMaxT
+            # return self.cmb.lMaxT
+            return self.cmb.lMaxP
         elif XY == 'EE' or XY == 'BB' or XY == 'EB':
             return self.cmb.lMaxP
         elif XY == 'TE' or XY == 'TB':
@@ -156,18 +157,16 @@ class lensing_estimator(object):
 
     def var_individual(self, L, XY):
         """
-        Variance of the QE for individual XY choice. it is same like the
+        Variance of the QE for individual XY. Same as the
         normalization of the \phi_XY estimator. Such that norm = 1/(\int F*f)
         such that \phi_XY = norm* \int F*(XY)
         """
-        # print "here 1"
         l1min = self.l1Min
         l1max = self.l1max(XY)
         # """
         if L > 2.*l1max:  # L = l1 + l2 thus max L = 2*l1
             return 0.
         # """
-        # print "here 2"
 
         def integrand(l_1, phil):
 
@@ -176,9 +175,8 @@ class lensing_estimator(object):
             if l_1 < l1min or l_2 < l1min or l_1 > l1max or l_2 > l1max:
                 return 0.
             """
-            # print "here 1"
             result = self.f_XY(L, l_1, phil, XY)*self.F_XY(L, l_1, phil, XY)
-            # print np.shape(result)
+
             result *= 2*l_1  # **2
             # d^2l_1 = dl_1*l_1*dphi1
             """factor of 2 above because phi integral is symmetric. Thus we've
@@ -189,8 +187,7 @@ class lensing_estimator(object):
             # """
             # idx = np.where((l_2 < l1min) | (l_2 > l1max))
             idx = np.where((l_1 < l1min) | (l_1 > l1max) | (l_2 < l1min) | (l_2 > l1max))
-            # print idx
-            # print np.shape(result)
+
             result[idx] = 0.
             # """
             return result
@@ -201,28 +198,10 @@ class lensing_estimator(object):
         phi1 = np.linspace(0., np.pi, 30)
         int_1 = np.zeros(len(phi1))
         for i in range(len(phi1)):
-            # print "here 3"
             intgnd = integrand(l1, phi1[i])
-            # print "here 4"
             int_1[i] = integrate.simps(intgnd, x=l1, even='avg')
-            # print "here 3"
-            # int_1[i] = np.trapz(intgnd, x=l1)
-            # print i
-            # int_1[i] = ll_integral(phi1[i])
         int_ll = integrate.simps(int_1, x=phi1, even='avg')
         result = 1./int_ll
-        """
-        def ll_integral(phil):
-            res = integrate.quad(integrand, 0., l1max, args=(phi1))[0]
-            return res
-
-        phi1 = np.linspace(0., np.pi, 10)
-        int_1 = np.zeros(len(phi1))
-        for i in range(len(phi1)):
-            int_1[i] = ll_integral(phi1[i])
-        res = integrate.simps(int_1, x=phil, even='avg')
-        result = 1. / res
-        """
 
         result *= L**2
 
@@ -269,7 +248,7 @@ class lensing_estimator(object):
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
-        data = np.genfromtxt("../CAMB/qe_lens_lenspotentialCls.dat")
+        data = np.genfromtxt("input/CAMB/qe_lens_lenspotentialCls.dat")
         L = data[:, 0]
         ax.plot(L, data[:, 5], 'r-', lw=1.5, label=r'signal')
 
@@ -341,8 +320,7 @@ class lensing_estimator(object):
 
             # idx = np.where((l_2 < l1min) | (l_2 > l1max))
             idx = np.where((l_1 < l1min) | (l_1 > l1max) | (l_2 < l1min) | (l_2 > l1max))
-            # print idx
-            # print np.shape(result)
+
             result[idx] = 0.
             return result
 
@@ -353,7 +331,6 @@ class lensing_estimator(object):
         for i in range(len(phi1)):
             intgnd = integrand(l1, phi1[i])
             int_1[i] = integrate.simps(intgnd, x=l1, even='avg')
-            # int_1[i] = l1_integral(phi1[i])
         int_l1 = integrate.simps(int_1, x=phi1, even='avg')
         result = int_l1
         # """
@@ -369,7 +346,7 @@ class lensing_estimator(object):
         data = np.zeros((self.Nl, 12))
         data[:, 0] = np.copy(self.L)
         pool = Pool(ncpus=4)
-        # pool = Pool(4)
+
         cov_XY_AB = {}
 
         n_est = len(est)
@@ -404,9 +381,9 @@ class lensing_estimator(object):
                 n_mv[el] = 1./np.sum(invcov)
                 # np.savetxt('covmat.txt', covmat)
             except:
-                print "this isn't working!" + str(el)
+                print "exception while inverting the covariance matrix at L = %s !" % str(el)
                 pass
-        # print counter
+
         data[:, -1] = n_mv
 
         if est == ['TT', 'EE', 'TE']:
@@ -415,16 +392,11 @@ class lensing_estimator(object):
             np.savetxt('output/HO02_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_TB_EB_only.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise)), data)
         else:
             np.savetxt(self.covar_out, data)
-        # np.savetxt('covariance_minvar_lmin%s_lmaxT%s_lmaxP%s_TB_EB_only_own.txt' % (str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP)), data)
-        # np.savetxt('covariance_minvar_lmin%s_lmaxT%s_lmaxP%s_TT_EE_TE_only_own.txt' % (str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP)), data)
-        
 
     def interp_cov(self, est):
         print "Interpolating covariances"
 
         self.cov_d = {}
-        # data = np.genfromtxt('covariance_minvar_lmin%s_lmaxT%s_lmaxP%s_TB_EB_only_own.txt' % (str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP)))
-        # data = np.genfromtxt('covariance_minvar_lmin%s_lmaxT%s_lmaxP%s_TT_EE_TE_only_own.txt' % (str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP)))
         data = np.genfromtxt(self.covar_out)
         L = data[:, 0]
 
@@ -445,7 +417,7 @@ class lensing_estimator(object):
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
-        data2 = np.genfromtxt("../CAMB/qe_lens_lenspotentialCls.dat")
+        data2 = np.genfromtxt("input/CAMB/qe_lenspotentialCls.dat")
         L = data2[:, 0]
         ax.plot(L, data2[:, 5], 'r-', lw=1.5, label=r'signal')
 
@@ -517,13 +489,14 @@ class lensing_estimator(object):
         # ax.set_xscale('log')
         # ax.set_yscale('log')
         ax.set_xlabel(r'$L$', fontsize=16)
-        ax.set_ylabel(r'$\lvert{N_{XY}}(L)\rvert \left/ \sqrt{{N_{XX}(L)} \times {N_{YY}(L)}} \right.$', fontsize=16)
+        ax.set_ylabel(r'$|{N_{XY}}(L)| / \sqrt{{N_{XX}(L)} \times {N_{YY}(L)}}$', fontsize=16)
         ax.set_ylim(ymin=-0.001)
         ax.set_xlim((2., self.l1Max))
         ax.set_xscale('log')
         ax.tick_params(axis='both', labelsize=14)
         plt.show()
-        
+
+    """   
     def comp_manu(self):
         d1 = np.loadtxt('variance_ind_lmin%s_lmaxT%s_lmaxP%s_own.txt' % (str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP)))
         add_manu = '/Users/amaniyar/Workspace/Yacine_Qe/python/Manu/ForQuE-master/output/cmblensrec/cmb_beam1.0_noise1.0_nu143_nu143_lmin30_lmaxT10000_lmaxP10000_cmbs4/'
@@ -549,6 +522,7 @@ class lensing_estimator(object):
         ax.set_ylim((3.e-11, 0.1))
         ax.set_xlim((2., 4.e4))
         plt.show()
+    """
 
 
 if __name__ == '__main__':
@@ -560,7 +534,7 @@ if __name__ == '__main__':
 
     time0 = time()
     
-    # """
+    """
     # S4
     beam = 1. # 7.
     noise_t = 1.  # 27.
@@ -569,15 +543,6 @@ if __name__ == '__main__':
     lMaxT = 3.5e3
     lMaxP = 3.5e3
 
-    """
-    # AdvACT
-    beam = 1.4 # 7.
-    noise_t = 10.  # 27.
-    noise_p = 10.*np.sqrt(2)  # 40.*np.sqrt(2)
-    lMinT = 30.
-    lMaxT = 3.5e3
-    lMaxP = 3.5e3
-    # """
     cmb = Cell_cmb(beam=beam, noise_t=noise_t, noise_p=noise_p, lMin=lMinT,
                    lMaxT=lMaxT, lMaxP=lMaxP)
     # cmb = Cell_cmb(beam=7., noise_t=27., noise_p=40*np.sqrt(2.), lMin=30.,
@@ -590,16 +555,10 @@ if __name__ == '__main__':
     est = ['TT', 'EE', 'TE', 'TB', 'EB']
     # est = ['TB', 'EB']
     # est = ['TT', 'EE', 'TE']
-    """
-    l_est.calc_var(est)
-    # """
-    # """
     l_est.calc_var(est)
     l_est.interp_var(est)
     # l_est.plot_var(est)
     # l_est.comp_manu()
-    # """
-    # """
     l_est.calc_cov(est)
 
     l_est.interp_cov(est)
@@ -608,23 +567,5 @@ if __name__ == '__main__':
 
     l_est.plot_corrcoef(est)
     # l_est.comp_manu()
-    # """
-    """
-    l1Max = 1e4
-    LL = 3.363773849117372720e+03  # 1.905616964335945568e+03  # 2.291060084111202286e+03
-    # np.logspace(np.log10(1.), np.log10(l1Max+1.), 51, 10.)
-    XY = ['TT']  # , 'TE']  # , 'EB']  # , 'TE', 'TB', 'EB']  # , 'TB']
-    # phil = np.linspace(0., np.pi, 10)
-    phill = 0.
-    el = 400.
-    # l_est.plot_gXY(L, el, phil, XY)
-    l1 = l_est.l1(LL, el, phill)
-    l2 = l_est.l2(LL, el, phill)
-    # print l1, l2
-    # print cmb.unlensedTT(l1), cmb.unlensedTT(l2)
-    # g, Ll1, Ll2 = l_est.g_XY(LL, el, phill, XY[0])
-    # print g, Ll1, Ll2
-    # l_est.plot_GXY(L, l, phil, XY)
-    # print time()-time0
     # """
     print time()-time0

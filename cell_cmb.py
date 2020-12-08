@@ -26,13 +26,14 @@ class Cell_cmb(object):
         # reading the power spectra
         # unlensed TT, EE, TE
         # nolens = np.loadtxt('../CAMB/qe_lenspotentialCls.dat')
-        nolens = np.loadtxt('../CAMB/manu_lenspotentialCls.dat')
+        nolens = np.loadtxt('input/CAMB/qe_lenspotentialCls.dat')
         fac = self.dl_to_cl(nolens[:, 0])
         nolens[:, 1] *= fac/cmb_out
         nolens[:, 2] *= fac/cmb_out
         nolens[:, 3] *= fac/cmb_out
         nolens[:, 4] *= fac/cmb_out
 
+        # corrul = 0.8*np.sqrt(nolens[:, 1]*nolens[:, 2])
         # interpolate
         self.unlensedTT = interp1d(nolens[:, 0], nolens[:, 1], kind='linear',
                                    bounds_error=False, fill_value=0.)
@@ -42,16 +43,19 @@ class Cell_cmb(object):
                                    bounds_error=False, fill_value=0.)
         self.unlensedTE = interp1d(nolens[:, 0], nolens[:, 4], kind='linear',
                                    bounds_error=False, fill_value=0.)
+        # self.unlensedTE = interp1d(nolens[:, 0], corrul, kind='linear',
+        #                            bounds_error=False, fill_value=0.)
 
         # lensed TT, EE, TE
         # lens = np.loadtxt('../CAMB/qe_lensedCls.dat')
-        lens = np.loadtxt('../CAMB/manu_lensedCls.dat')
+        lens = np.loadtxt('input/CAMB/qe_lensedCls.dat')
         fac = self.dl_to_cl(lens[:, 0])
         lens[:, 1] *= fac/cmb_out
         lens[:, 2] *= fac/cmb_out
         lens[:, 3] *= fac/cmb_out
         lens[:, 4] *= fac/cmb_out
 
+        # corrl = 0.8*np.sqrt(lens[:, 1]*lens[:, 2])
         # interpolate
         self.lensedTT = interp1d(lens[:, 0], lens[:, 1], kind='linear',
                                  bounds_error=False, fill_value=0.)
@@ -61,10 +65,12 @@ class Cell_cmb(object):
                                  bounds_error=False, fill_value=0.)
         self.lensedTE = interp1d(lens[:, 0], lens[:, 4], kind='linear',
                                  bounds_error=False, fill_value=0.)
+        # self.lensedTE = interp1d(lens[:, 0], corrl, kind='linear',
+        #                          bounds_error=False, fill_value=0.)
 
         # total lensed : lens+noise
         print 'calculating total power spectra'
-        self.totalTT = lambda l: self.lensedTT(l) + self.detectorNoise(l, self.sensitivity_t)
+        self.totalTT = lambda l: self.lensedTT(l) + self.detectorNoise(l, self.sensitivity_t) + self.artificialNoiseTT(l)
         self.totalEE = lambda l: self.lensedEE(l) + self.detectorNoise(l, self.sensitivity_p)
         self.totalBB = lambda l: self.lensedBB(l) + self.detectorNoise(l, self.sensitivity_p)
         self.totalTE = lambda l: self.lensedTE(l)
@@ -75,8 +81,23 @@ class Cell_cmb(object):
         b = (sensitivity/self.Tcmb)**2
         return b*np.exp(a)  # *7.4311e12
 
+    def artificialNoiseTT(self, l):
+        """
+        for lmaxT != lmaxP, we add artificial noise on the TT power spectra
+        for ell > lmaxT. This way both TT and TE or TB and EE are calculated
+        to same ell value, however, TT is dominated by this artificial noise
+        and thus dies not really contrubute to the signal. This might bias
+        the estimator though. So keep this in mind. For now, just for
+        calculating the noise, this should be fine.
+        """
+        noise = np.zeros(len(l))
+        if self.lMaxT != self.lMaxP:
+            idx = np.where((l > self.lMaxT))[0]
+            noise[idx] = 1.e6
+        return noise
+
     def plot_cell(self):
-        nolens = np.loadtxt('../CAMB/manu_lenspotentialCls.dat')
+        nolens = np.loadtxt('input/CAMB/qe_lenspotentialCls.dat')
         # np.loadtxt('../CAMB/qe_nolens_scalCls.dat')
         ell = nolens[:, 0]
         noise_t = self.detectorNoise(ell, self.sensitivity_t)
@@ -144,7 +165,7 @@ class Cell_cmb(object):
         """
 
     def plot_cell_2(self):
-        lens = np.loadtxt('../CAMB/manu_lensedCls.dat')
+        lens = np.loadtxt('input/CAMB/qe_lensedCls.dat')
         ell = lens[:, 0]
         noise_t = self.detectorNoise(ell, self.sensitivity_t)
         noise_p = self.detectorNoise(ell, self.sensitivity_p)
@@ -180,6 +201,8 @@ class Cell_cmb(object):
         fig = plt.figure(14)
         ax = fig.add_subplot(111)
         # """
+        print self.lensedTT(np.array([100., 500., 1000., 2000., 3500., 5000.]))
+        print self.totalTT(np.array([100., 500., 1000., 2000., 3500., 5000.]))
         ax.plot(ell2, ell2*(ell2+1)*self.totalTT(ell2)/(2*np.pi), 'k', lw=1.5,
                 label=r'TT')
         # ax.plot(ell2, ell2*(ell2+1)*noise_t/(2*np.pi), 'k--', lw=1.5,
