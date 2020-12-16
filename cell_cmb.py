@@ -3,8 +3,8 @@ from headers import *
 
 class Cell_cmb(object):
 
-    def __init__(self, exp):
-
+    def __init__(self, exp, smv):
+        self.smv = smv
         self.exp = exp
         self.name = self.exp['name']
         #  beam fwhm in radians
@@ -73,7 +73,10 @@ class Cell_cmb(object):
         self.totalTT = lambda l: self.lensedTT(l) + self.detectorNoise(l, self.sensitivity_t) + self.artificialNoiseTT(l)
         self.totalEE = lambda l: self.lensedEE(l) + self.detectorNoise(l, self.sensitivity_p)
         self.totalBB = lambda l: self.lensedBB(l) + self.detectorNoise(l, self.sensitivity_p)
-        self.totalTE = lambda l: self.lensedTE(l)
+        if self.smv == 1:
+            self.totalTE = lambda l: self.lensedTE(l)*0.
+        else:
+            self.totalTE = lambda l: self.lensedTE(l)  # *0.
 
     def detectorNoise(self, l, sensitivity):
         sigma_beam = self.fwhm / np.sqrt(8.*np.log(2.))
@@ -93,7 +96,7 @@ class Cell_cmb(object):
         noise = np.zeros(len(l))
         if self.lMaxT != self.lMaxP:
             idx = np.where((l > self.lMaxT))[0]
-            noise[idx] = 1.e6
+            noise[idx] = 1.e10
         return noise
 
     def plot_cell(self):

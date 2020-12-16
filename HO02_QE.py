@@ -84,7 +84,7 @@ class lensing_estimator(object):
 
         Ldotl_1 = L*l_1*np.cos(phi1)
         Ldotl_2 = L*l_2*np.cos(phi2)
-
+        # """
         if XY == 'TT':
             result = self.cmb.unlensedTT(l_1)*Ldotl_1
             result += self.cmb.unlensedTT(l_2)*Ldotl_2
@@ -109,7 +109,32 @@ class lensing_estimator(object):
             result = self.cmb.unlensedBB(l_1)*Ldotl_1
             result += self.cmb.unlensedBB(l_2)*Ldotl_2
             result *= np.cos(2.*phi12)
-
+        """
+        if XY == 'TT':
+            result = self.cmb.lensedTT(l_1)*Ldotl_1
+            result += self.cmb.lensedTT(l_2)*Ldotl_2
+            # print result
+            # sys.exit()
+        elif XY == 'EE':
+            result = self.cmb.lensedEE(l_1)*Ldotl_1
+            result += self.cmb.lensedEE(l_2)*Ldotl_2
+            result *= np.cos(2.*phi12)
+        elif XY == 'TE':
+            # there is a typo in HO02!!!!!!!!!
+            # instead of cos(phi12) it should be cos(2*phi12)!!!!!
+            result = self.cmb.lensedTE(l_1)*np.cos(2.*phi12)*Ldotl_1
+            result += self.cmb.lensedTE(l_2)*Ldotl_2
+        elif XY == 'TB':
+            result = self.cmb.lensedTE(l_1)*np.sin(2.*phi12)*Ldotl_1
+        elif XY == 'EB':
+            result = self.cmb.lensedEE(l_1)*Ldotl_1
+            result -= self.cmb.lensedBB(l_2)*Ldotl_2
+            result *= np.sin(2.*phi12)
+        elif XY == 'BB':
+            result = self.cmb.lensedBB(l_1)*Ldotl_1
+            result += self.cmb.lensedBB(l_2)*Ldotl_2
+            result *= np.cos(2.*phi12)
+        # """
         # result *= 2. / L**2
 
         return result

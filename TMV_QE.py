@@ -24,7 +24,10 @@ class lensing_estimator(object):
         self.L = np.logspace(np.log10(1.), np.log10(2*self.l1Max+1.), 201, 10.)
         # self.L = np.logspace(np.log10(1.), np.log10(2*self.l1Max+1.), 51, 10.)
         self.Nl = len(self.L)
-        self.var_out = 'output/True_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise))
+        if self.cmb.smv == 1:
+            self.var_out = 'output/SMV_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise))
+        else:
+            self.var_out = 'output/True_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise))
 
     """
     L = l1 + l2
@@ -84,7 +87,7 @@ class lensing_estimator(object):
 
         Ldotl_1 = L*l_1*np.cos(phi1)
         Ldotl_2 = L*l_2*np.cos(phi2)
-
+        # """
         if XY == 'TT':
             result = self.cmb.unlensedTT(l_1)*Ldotl_1
             result += self.cmb.unlensedTT(l_2)*Ldotl_2
@@ -107,6 +110,30 @@ class lensing_estimator(object):
             result = self.cmb.unlensedBB(l_1)*Ldotl_1
             result += self.cmb.unlensedBB(l_2)*Ldotl_2
             result *= np.cos(2.*phi12)
+        """
+        if XY == 'TT':
+            result = self.cmb.lensedTT(l_1)*Ldotl_1
+            result += self.cmb.lensedTT(l_2)*Ldotl_2
+        elif XY == 'EE':
+            result = self.cmb.lensedEE(l_1)*Ldotl_1
+            result += self.cmb.lensedEE(l_2)*Ldotl_2
+            result *= np.cos(2.*phi12)
+        elif XY == 'TE':
+            # there is a typo in HO02!!!!!!!!!
+            # instead of cos(phi12) it should be cos(2*phi12)!!!!!
+            result = self.cmb.lensedTE(l_1)*np.cos(2.*phi12)*Ldotl_1
+            result += self.cmb.lensedTE(l_2)*Ldotl_2
+        elif XY == 'TB':
+            result = self.cmb.lensedTE(l_1)*np.sin(2.*phi12)*Ldotl_1
+        elif XY == 'EB':
+            result = self.cmb.lensedEE(l_1)*Ldotl_1
+            result -= self.cmb.lensedBB(l_2)*Ldotl_2
+            result *= np.sin(2.*phi12)
+        elif XY == 'BB':
+            result = self.cmb.lensedBB(l_1)*Ldotl_1
+            result += self.cmb.lensedBB(l_2)*Ldotl_2
+            result *= np.cos(2.*phi12)
+        # """
         return result
 
     # """
@@ -443,6 +470,7 @@ class lensing_estimator(object):
         # data[:, 3] = self.var_d(2.*data[:, 1], 2.*data[:, 1])
 
         np.savetxt(self.var_out, data)
+        print self.var_out
 
     def interp_tvar(self):
         print "Interpolating variances"
@@ -537,6 +565,10 @@ class lensing_estimator(object):
         # L_p = np.logspace(np.log10(1.), np.log10(10000.), 51, 10.)
         # vart_var = interp_tmv(L_p)/interp_HO(L_p)  # data2[:, -1]
         vart_var = (interp_HO(L_p)-interp_tmv(L_p))*100./interp_HO(L_p)
+        ind = np.argmax(vart_var)
+        print "max percent improvement of %s happens at L = %s" % (vart_var[ind], L_p[ind])
+        ind2 = np.max(np.where(L_p < 100.))
+        print "At L = %s percent improvement is %s" % (L_p[ind2], vart_var[ind2])
         plt.plot(L_p, vart_var, 'b')
         plt.xscale('log')
         # plt.ylim(0.1, 1.1)
@@ -659,10 +691,10 @@ class lensing_estimator(object):
             vart_var2 = interp_tmv2(L_p)/interp_HO_2(L_p)
             vart_var = interp_tmv(L_p)/interp_HO(L_p)
 
-            ax.plot(L_p, vart_var1, 'b', ls=lines[e],
-                    label='%s TT-EE-TE' % (clexp['name']))
-            ax.plot(L_p, vart_var2, 'r', ls=lines[e],
-                     label='%s TB-EB' % (clexp['name']))
+            # ax.plot(L_p, vart_var1, 'b', ls=lines[e],
+            #         label='%s TT-EE-TE' % (clexp['name']))
+            # ax.plot(L_p, vart_var2, 'r', ls=lines[e],
+            #          label='%s TB-EB' % (clexp['name']))
             ax.plot(L_p, vart_var, 'k', ls=lines[e],
                      label='%s MV' % (clexp['name']))
         
@@ -772,6 +804,64 @@ class lensing_estimator(object):
         plt.loglog(L_p, cumSNH, 'r')
         plt.loglog(L_p, cumSNT, 'b')
         return SNT2, SNH2, cumSNT, cumSNH
+
+    def plot_plancklike_var_tvar_ratio_multexp(self, exp):
+        ar = np.array([100., 1000.])
+        print self.cmb.totalTE(ar)
+        m2inv = self.M2_inv(50., ar, 0.4)
+        print m2inv[0]  # , 0, 1]
+        lines = ["-", "--", "-."]
+        cl = ["b", "r", "g"]
+        # custom_lines = [Line2D([0], [0], color='b'), Line2D([0], [0], color='r')]
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        for e in range(len(exp)):
+            clexp = exp[e]
+            data = np.genfromtxt('output/True_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (clexp['name'], str(clexp['lMin']), str(clexp['lMaxT']), str(clexp['lMaxP']), str(clexp['beam']), str(clexp['noise_t'])))
+            L = data[:, 0]
+
+            interp_tmv = interp1d(L, data[:, -1], kind='quadratic', bounds_error=False, fill_value=0.)
+
+            data3 = np.genfromtxt('output/SMV_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (clexp['name'], str(clexp['lMin']), str(clexp['lMaxT']), str(clexp['lMaxP']), str(clexp['beam']), str(clexp['noise_t'])))
+            L3 = data3[:, 0]
+
+            interp_smv = interp1d(L3, data3[:, -1], kind='quadratic', bounds_error=False, fill_value=0.)
+
+            data2 = np.genfromtxt('output/HO02_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (clexp['name'], str(clexp['lMin']), str(clexp['lMaxT']), str(clexp['lMaxP']), str(clexp['beam']), str(clexp['noise_t'])))
+            interp_HO = interp1d(data2[:, 0], data2[:, -1], kind='quadratic', bounds_error=False, fill_value=0.)
+
+            # L_p = np.logspace(np.log10(1.), np.log10(5000.), 201, 10.)
+            L_p = np.linspace(2, 5000, 4999)
+
+            vart_smv = interp_tmv(L_p)/interp_smv(L_p)
+            var_smv = interp_HO(L_p)/interp_smv(L_p)
+            vart_var = interp_tmv(L_p)/interp_HO(L_p)
+
+            ax.plot(L_p, vart_smv, cl[e], ls=lines[0],
+                    label='%s GMV_SMV' % (clexp['name']))
+            ax.plot(L_p, var_smv, cl[e], ls=lines[1],
+                    label='%s HO_SMV' % (clexp['name']))
+            ax.plot(L_p, vart_var, cl[e], ls=lines[2],
+                    label='%s GMV_HO' % (clexp['name']))
+
+        # ls = ax.get_lines()
+        # leg1 = plt.legend([ls[i] for i in [0, 1]], [exp[i]['name'] for i in range(len(exp))], loc=1)
+        # leg2 = plt.legend(custom_lines, ['TT-EE-TE', 'TB-EB'], loc=4)
+        ax.legend(prop={'size': 17}, loc='upper left', ncol=3, frameon=False,
+                  labelspacing=0.2)
+        ax.set_xscale('log')
+        ax.set_xlim(2.0, clexp['lMaxP'])
+        ax.set_ylim(0.8, 1.05)
+        # ax.hlines(y=1, xmin=min(L_p), xmax=max(L_p))  # , color='k--')
+        ax.set_ylabel(r'$N_{mv}^\mathrm{GMV, HO}/N_{mv}^\mathrm{HO, SMV}$',
+                      fontsize=22)
+        ax.set_xlabel(r'$L$', fontsize=22)
+        ax.tick_params(axis='both', labelsize=22)
+        # ax.legend(custom_lines, ['TT-EE-TE', 'TB-EB'])
+        # ax.add_artist(leg1)
+        # ax.add_artist(leg2)
+        # np.save('figures/multexp_vartrueind_varHO02ind.png')
+        # """
 
 
 if __name__ == '__main__':
