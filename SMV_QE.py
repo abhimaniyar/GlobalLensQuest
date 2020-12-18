@@ -104,8 +104,10 @@ class sqe_lensing_estimator(object):
         elif XY == 'TB':
             result = self.cmb.unlensedTE(l_1)*np.sin(2.*phi12)*Ldotl_1
         elif XY == 'EB':
+            # there is a typo in HO02!!!!!!!!!
+            # instead of - it should be + between first and second term!!!!!
             result = self.cmb.unlensedEE(l_1)*Ldotl_1
-            result -= self.cmb.unlensedBB(l_2)*Ldotl_2
+            result += self.cmb.unlensedBB(l_2)*Ldotl_2
             result *= np.sin(2.*phi12)
         elif XY == 'BB':
             result = self.cmb.unlensedBB(l_1)*Ldotl_1
@@ -129,8 +131,10 @@ class sqe_lensing_estimator(object):
         elif XY == 'TB':
             result = self.cmb.lensedTE(l_1)*np.sin(2.*phi12)*Ldotl_1
         elif XY == 'EB':
+            # there is a typo in HO02!!!!!!!!!
+            # instead of - it should be + between first and second term!!!!!
             result = self.cmb.lensedEE(l_1)*Ldotl_1
-            result -= self.cmb.lensedBB(l_2)*Ldotl_2
+            result += self.cmb.lensedBB(l_2)*Ldotl_2
             result *= np.sin(2.*phi12)
         elif XY == 'BB':
             result = self.cmb.lensedBB(l_1)*Ldotl_1
