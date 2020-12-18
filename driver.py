@@ -14,16 +14,9 @@ import TMV_QE as tmv
 # os.remove(getattr(tmv, '__cached__', 'TMV_QE.pyc'))
 # reload(tmv)
 # import TMV_QE as tmv
-# from HO02_QE import *
-# from TMV_QE import *
+import SMV_QE as smv
 
-# planck_like_analysis (smv): planck set C_ell(TE) = 0 in their Cfid matrix
-# So if you want to compare to their results, it is
-# equivalent to setting C_ell(TE) = 0 in M_1 and M_2 matrices of global MV
-# but C_ell(TE) is not zero in f_TE and f_TB. This is the so called sub-optimal
-# minimum variance estimator
-smv = 1
-compare_HO02 = 0
+compare_HO02 = 1
 calculate_ratio_ind_ho02_tmv = 0
 
 # dictionary with experiment spec
@@ -47,8 +40,8 @@ custom = {"name": "SO_TE_0", "lMin": 30., "lMaxT": 2.e3, "lMaxP": 2.e3,
 
 time0 = time()
 
-exp = SO
-cmb = Cell_cmb(exp, pla)
+exp = CMBS4
+cmb = Cell_cmb(exp)
 
 # expind = np.array([10., 50., 500., 1500.])
 # print cmb.totalTE(expind)
@@ -153,6 +146,14 @@ if calculate_ratio_ind_ho02_tmv == 1:
 
 
 tmv_est.plot_tvar()
+
+smv_est = smv.sqe_lensing_estimator(cmb)
+
+smv_est.calc_lambda()
+smv_est.interp_lambda()
+smv_est.calc_cov()
+smv_est.interp_cov()
+smv_est.plot_cov()
 
 multexp = [Planck_smica, SO, CMBS4]
 # tmv_est.plotvar_tvar_ratio_multexp(multexp)

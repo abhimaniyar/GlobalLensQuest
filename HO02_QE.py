@@ -84,7 +84,7 @@ class lensing_estimator(object):
 
         Ldotl_1 = L*l_1*np.cos(phi1)
         Ldotl_2 = L*l_2*np.cos(phi2)
-        # """
+        """
         if XY == 'TT':
             result = self.cmb.unlensedTT(l_1)*Ldotl_1
             result += self.cmb.unlensedTT(l_2)*Ldotl_2

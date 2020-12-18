@@ -24,10 +24,7 @@ class lensing_estimator(object):
         self.L = np.logspace(np.log10(1.), np.log10(2*self.l1Max+1.), 201, 10.)
         # self.L = np.logspace(np.log10(1.), np.log10(2*self.l1Max+1.), 51, 10.)
         self.Nl = len(self.L)
-        if self.cmb.smv == 1:
-            self.var_out = 'output/SMV_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise))
-        else:
-            self.var_out = 'output/True_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise))
+        self.var_out = 'output/True_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise))
 
     """
     L = l1 + l2
@@ -87,7 +84,7 @@ class lensing_estimator(object):
 
         Ldotl_1 = L*l_1*np.cos(phi1)
         Ldotl_2 = L*l_2*np.cos(phi2)
-        # """
+        """
         if XY == 'TT':
             result = self.cmb.unlensedTT(l_1)*Ldotl_1
             result += self.cmb.unlensedTT(l_2)*Ldotl_2
@@ -822,7 +819,7 @@ class lensing_estimator(object):
 
             interp_tmv = interp1d(L, data[:, -1], kind='quadratic', bounds_error=False, fill_value=0.)
 
-            data3 = np.genfromtxt('output/SMV_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (clexp['name'], str(clexp['lMin']), str(clexp['lMaxT']), str(clexp['lMaxP']), str(clexp['beam']), str(clexp['noise_t'])))
+            data3 = np.genfromtxt('output/SQE_variance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (clexp['name'], str(clexp['lMin']), str(clexp['lMaxT']), str(clexp['lMaxP']), str(clexp['beam']), str(clexp['noise_t'])))
             L3 = data3[:, 0]
 
             interp_smv = interp1d(L3, data3[:, -1], kind='quadratic', bounds_error=False, fill_value=0.)
