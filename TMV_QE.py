@@ -807,10 +807,10 @@ class lensing_estimator(object):
         return SNT2, SNH2, cumSNT, cumSNH
 
     def plot_plancklike_var_tvar_ratio_multexp(self, exp):
-        ar = np.array([100., 1000.])
-        print self.cmb.totalTE(ar)
-        m2inv = self.M2_inv(50., ar, 0.4)
-        print m2inv[0]  # , 0, 1]
+        # ar = np.array([100., 1000.])
+        # print self.cmb.totalTE(ar)
+        # m2inv = self.M2_inv(50., ar, 0.4)
+        # print m2inv[0]  # , 0, 1]
         lines = ["-", "--", "-."]
         cl = ["b", "r", "g"]
         # custom_lines = [Line2D([0], [0], color='b'), Line2D([0], [0], color='r')]
