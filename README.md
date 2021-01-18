@@ -13,6 +13,6 @@ You can just clone the repository, and do all the calculations as in driver.py:
 ```
 python driver.py
 ```
-
+This code uses some of the structure from Manu Schaan's code ForQuE found at https://github.com/EmmanuelSchaan/ForQuE
 If you have any comments, suggestions or questions, please do not hesitate to contact me: abhishek.maniyar@nyu.edu
 
