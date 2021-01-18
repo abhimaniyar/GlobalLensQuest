@@ -7,6 +7,7 @@ Comparison of various CMB lensing quadratic estimators in terms of their noise p
 * Okamoto and Hu 2003 full-sky version of Hu and Okamoto estimators. Has a provision of setting C^{TE}_\ell = 0 to have a separation in the configuration space
 * Sub-optimal quadratic estimator. This was used in the Planck 2018 lensing analysis where they set C^{TE}_\ell = 0 in their covariance matrix. Results in an estimator suboptimal even than Hu and Okamoto 2002
 
+Please note that we use lensed gradient CMB spectra here to avoid N(1) bias here instead of unlensed CMB power spctra while calculating the lensing response functions. 
 Requires numpy for computation and matplotlib for plotting
 
 You can just clone the repository, and do all the calculations as in driver.py:
