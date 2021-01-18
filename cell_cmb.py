@@ -1,4 +1,4 @@
-from headers import *
+from imports import *
 
 
 class Cell_cmb(object):
@@ -24,13 +24,15 @@ class Cell_cmb(object):
         cmb_out = 1.
         # reading the power spectra
         # unlensed TT, EE, TE
-        # nolens = np.loadtxt('../CAMB/qe_lenspotentialCls.dat')
-        nolens = np.loadtxt('input/CAMB/qe_lenspotentialCls.dat')
+        # nolens = np.loadtxt('input/CAMB/qe_lenspotentialCls.dat')
+        # lensed gradient spectra give lower bias
+        nolens = np.loadtxt('input/CAMB/qe_lensed_gradient_Cls.dat')
         fac = self.dl_to_cl(nolens[:, 0])
         nolens[:, 1] *= fac/cmb_out
         nolens[:, 2] *= fac/cmb_out
         nolens[:, 3] *= fac/cmb_out
         nolens[:, 4] *= fac/cmb_out
+        nolens[:, 5] *= fac/cmb_out
 
         # corrul = 0.8*np.sqrt(nolens[:, 1]*nolens[:, 2])
         # interpolate
@@ -40,7 +42,9 @@ class Cell_cmb(object):
                                    bounds_error=False, fill_value=0.)
         self.unlensedBB = interp1d(nolens[:, 0], nolens[:, 3], kind='linear',
                                    bounds_error=False, fill_value=0.)
-        self.unlensedTE = interp1d(nolens[:, 0], nolens[:, 4], kind='linear',
+        # self.unlensedTE = interp1d(nolens[:, 0], nolens[:, 4], kind='linear',
+        #                            bounds_error=False, fill_value=0.)
+        self.unlensedTE = interp1d(nolens[:, 0], nolens[:, 5], kind='linear',
                                    bounds_error=False, fill_value=0.)
         # self.unlensedTE = interp1d(nolens[:, 0], corrul, kind='linear',
         #                            bounds_error=False, fill_value=0.)

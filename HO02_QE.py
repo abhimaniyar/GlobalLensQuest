@@ -1,4 +1,4 @@
-from headers import *
+from imports import *
 
 
 class lensing_estimator(object):
@@ -84,7 +84,7 @@ class lensing_estimator(object):
 
         Ldotl_1 = L*l_1*np.cos(phi1)
         Ldotl_2 = L*l_2*np.cos(phi2)
-        """
+        # """
         if XY == 'TT':
             result = self.cmb.unlensedTT(l_1)*Ldotl_1
             result += self.cmb.unlensedTT(l_2)*Ldotl_2
@@ -256,7 +256,12 @@ class lensing_estimator(object):
 
             data[:, i_est+1] = np.array(pool.map(f, self.L))
 
-        np.savetxt(self.var_out, data)
+        if est == ['TT', 'EE', 'TE']:
+            np.savetxt('output/HO02_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_TT_EE_TE_only.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise)), data)
+        elif est == ['TB', 'EB']:
+            np.savetxt('output/HO02_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_TB_EB_only.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise)), data)
+        else:
+            np.savetxt(self.var_out, data)
 
     def interp_var(self, est):
 

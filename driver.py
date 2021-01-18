@@ -1,4 +1,4 @@
-from headers import *
+from imports import *
 # import imp
 import cell_cmb
 # os.remove(getattr(cell_cmb, '__cached__', 'cell_cmb.pyc'))
@@ -10,13 +10,17 @@ import HO02_QE as ho
 # reload(ho)
 # import HO02_QE as ho
 
-import TMV_QE as tmv
-# os.remove(getattr(tmv, '__cached__', 'TMV_QE.pyc'))
-# reload(tmv)
-# import TMV_QE as tmv
-import SMV_QE as smv
+import GMV_QE as gmv
+# os.remove(getattr(gmv, '__cached__', 'TMV_QE.pyc'))
+# reload(gmv)
 
-compare_HO02 = 1
+import SQE as sqe
+import OH03_flatsky as oh
+
+import plots_compare as pltcomp
+
+# in case need to compare HO02 estimator with GMV, use 1 otherwise 0
+compare_HO02 = 0
 calculate_ratio_ind_ho02_tmv = 0
 
 # dictionary with experiment spec
@@ -32,21 +36,16 @@ SO = {"name": "SO", "lMin": 30., "lMaxT": 3000., "lMaxP": 3000.,
 CMBS4 = {"name": "CMBS4", "lMin": 30., "lMaxT": 3000., "lMaxP": 3000.,
          "beam": 1., "noise_t": 1., "noise_p": 1.*np.sqrt(2)}
 
-Planck_smica = {"name": "Planck", "lMin": 100., "lMaxT": 2000., "lMaxP": 2000.,
+Planck_smica = {"name": "Planck", "lMin": 100., "lMaxT": 3000., "lMaxP": 3000.,
                 "beam": 5., "noise_t": 35., "noise_p": 60.}
 
-custom = {"name": "SO_TE_0", "lMin": 30., "lMaxT": 2.e3, "lMaxP": 2.e3,
-         "beam": 1.4, "noise_t": 5., "noise_p": 5.*np.sqrt(2)}
+custom = {"name": "custom", "lMin": 30., "lMaxT": 2.e3, "lMaxP": 2.e3,
+         "beam": 10., "noise_t": 60., "noise_p": 100.}
 
 time0 = time()
 
-exp = CMBS4
+exp = Planck_smica
 cmb = Cell_cmb(exp)
-
-# expind = np.array([10., 50., 500., 1500.])
-# print cmb.totalTE(expind)
-# cmb = Cell_cmb(beam=beam, noise_t=noise_t, noise_p=noise_p, lMin=lMin,
-#                lMaxT=lMaxT, lMaxP=lMaxP)
 
 est = ['TT', 'EE', 'TE', 'TB', 'EB']
 # est = ['TB', 'EB']  # , 'TE', 'TB', 'EB']
@@ -54,120 +53,75 @@ est = ['TT', 'EE', 'TE', 'TB', 'EB']
 # est = ['TT', 'TE', 'TB', 'EB']
 # est = ['TE', 'TB']
 
-# cmb.plot_cell_2()
 
-# changing the font of the text in the plots
 fam = "serif"
 plt.rcParams["font.family"] = fam
 
 
-tmv_est = tmv.lensing_estimator(cmb)
+# Global minimum variance estimator (our work)
+gmv_est = gmv.lensing_estimator(cmb)
+print "Running GMV estimator"
+gmv_est.calc_tvar()
+gmv_est.interp_tvar()
+gmv_est.plot_tvar()
 
-"""
-var_gmv = 'output/True_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (exp['name'], str(exp['lMin']), str(exp['lMaxT']), str(exp['lMaxP']), str(exp['beam']), str(exp['noise_t']))
 
-if os.path.exists(var_gmv):
-    print "Global minimum variance for this configuration already calculated"
-else:
-    print "Global minimum variance for this configuration not yet calculated. Calculating it now."
-    tmv_est.calc_tvar()
-"""
-
-tmv_est.calc_tvar()
-tmv_est.interp_tvar()
+# HO02 estimator Hu and Okamoto (2002)
+ho02_est = ho.lensing_estimator(cmb)
+print "Running HO02 estimator"
+ho02_est.calc_var(est)
+ho02_est.interp_var(est)
+ho02_est.calc_cov(est)
+ho02_est.interp_cov(est)
 
 if compare_HO02 == 1:
-    totcov_ho02 = 'output/HO02_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (exp['name'], str(exp['lMin']), str(exp['lMaxT']), str(exp['lMaxP']), str(exp['beam']), str(exp['noise_t']))
-    if os.path.exists(totcov_ho02):
-        # """
-        ho02_est = ho.lensing_estimator(cmb)
-        ho02_est.calc_var(est)
-        ho02_est.interp_var(est)
-        ho02_est.calc_cov(est)
-        ho02_est.interp_cov(est)
-        # """
-        tmv_est.plot_var_tvar()
-        tmv_est.plot_var_tvar_percent()
-    else:
-        print "HO02 files not present. Running HO02 estimator"
-        ho02_est = ho.lensing_estimator(cmb)
-        ho02_est.calc_var(est)
-        ho02_est.interp_var(est)
-        ho02_est.calc_cov(est)
-        ho02_est.interp_cov(est)
+    pltcomp.plot_var_tvar(exp)
+    pltcomp.plot_var_tvar_percent(exp)
 
-        tmv_est.plot_var_tvar()
-        tmv_est.plot_var_tvar_percent()
 
 if calculate_ratio_ind_ho02_tmv == 1:
+    est1 = ['TT', 'EE', 'TE']
+    ho02_est = ho.lensing_estimator(cmb)
+    print "Running HO02 estimator for TT-EE-TE only"
+    ho02_est.calc_var(est1)
+    ho02_est.interp_var(est1)
+    ho02_est.calc_cov(est1)
+    ho02_est.interp_cov(est1)
 
-    cov1_ho02 = 'output/HO02_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_TT_EE_TE_only.txt' % (exp['name'], str(exp['lMin']), str(exp['lMaxT']), str(exp['lMaxP']), str(exp['beam']), str(exp['noise_t']))
-    cov2_ho02 = 'output/HO02_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_TB_EB_only.txt' % (exp['name'], str(exp['lMin']), str(exp['lMaxT']), str(exp['lMaxP']), str(exp['beam']), str(exp['noise_t']))
+    est2 = ['TB', 'EB']
+    ho02_est = ho.lensing_estimator(cmb)
+    print "Running HO02 estimator for TB-EB only"
+    ho02_est.calc_var(est2)
+    ho02_est.interp_var(est2)
+    ho02_est.calc_cov(est2)
+    ho02_est.interp_cov(est2)
 
-    if os.path.exists(cov1_ho02):
-        print "HO02 files present for TT-EE-TE only pair"
-        # """
-        est = ['TT', 'EE', 'TE']
-        ho02_est = ho.lensing_estimator(cmb)
-        ho02_est.calc_var(est)
-        ho02_est.interp_var(est)
-        ho02_est.calc_cov(est)
-        ho02_est.interp_cov(est)
-        # """
-    else:
-        print "HO02 files not present for TT-EE-TE only pair. Running HO02 estimator"
-        est = ['TT', 'EE', 'TE']
-        ho02_est = ho.lensing_estimator(cmb)
-        ho02_est.calc_var(est)
-        ho02_est.interp_var(est)
-        ho02_est.calc_cov(est)
-        ho02_est.interp_cov(est)
-
-    if os.path.exists(cov2_ho02):
-        print "HO02 files present for TB-EB only pair"
-        # """
-        est = ['TB', 'EB']
-        ho02_est = ho.lensing_estimator(cmb)
-        ho02_est.calc_var(est)
-        ho02_est.interp_var(est)
-        ho02_est.calc_cov(est)
-        ho02_est.interp_cov(est)
-        # """
-    else:
-        print "HO02 files not present for TB-EB only pair. Running HO02 estimator"
-        est = ['TB', 'EB']
-        ho02_est = ho.lensing_estimator(cmb)
-        ho02_est.calc_var(est)
-        ho02_est.interp_var(est)
-        ho02_est.calc_cov(est)
-        ho02_est.interp_cov(est)
-
-    tmv_est.plotvar_tvar_ratio()
+    pltcomp.plotvar_tvar_ratio(exp)
 
 
-tmv_est.plot_tvar()
+# Suboptimal quadratic estimator (Planck lensing 2018)
+sqe_est = sqe.sqe_lensing_estimator(cmb)
+print "Running SQE estimator"
+sqe_est.calc_lambda()
+sqe_est.interp_lambda()
+sqe_est.calc_cov()
+sqe_est.interp_cov()
+sqe_est.plot_cov()
 
-smv_est = smv.sqe_lensing_estimator(cmb)
+# OH03 estimator (Okamoto and Hu 2003)
+oh_est = oh.oh03_lensing_estimator(cmb)
+print "Running OH03"
+oh_est.calc_var(est)
+oh_est.interp_var(est)
+oh_est.calc_cov(est)
+oh_est.interp_cov(est)
 
-smv_est.calc_lambda()
-smv_est.interp_lambda()
-smv_est.calc_cov()
-smv_est.interp_cov()
-smv_est.plot_cov()
-
+# comparison between different estimators for diff experiments
 multexp = [Planck_smica, SO, CMBS4]
-# tmv_est.plotvar_tvar_ratio_multexp(multexp)
-# tmv_est.plotvar_var_tvar_percent_multexp(multexp)
-tmv_est.plot_plancklike_var_tvar_ratio_multexp(multexp)
-
-"""
-ho02_est = ho.lensing_estimator(cmb)
-# ho02_est.calc_var(est)
-ho02_est.interp_var(est)
-# ho02_est.calc_cov(est)
-ho02_est.interp_cov(est)
-ho02_est.plot_corrcoef(est)
-# """
+pltcomp.plotvar_tvar_ratio_multexp(multexp)
+pltcomp.plotvar_var_tvar_percent_multexp(multexp)
+pltcomp.plot_plancklike_var_tvar_ratio_multexp(multexp)
+pltcomp.plot_mv_multest_multexp(multexp)
 
 # SNT2, SNH2, cumSNT, cumSNH = tmv_est.SNR_comp(exp)
 

@@ -1,4 +1,4 @@
-from headers import *
+from imports import *
 
 
 class oh03_lensing_estimator(object):
@@ -84,7 +84,7 @@ class oh03_lensing_estimator(object):
 
         Ldotl_1 = L*l_1*np.cos(phi1)
         Ldotl_2 = L*l_2*np.cos(phi2)
-        """
+        # """
         if XY == 'TT':
             result = self.cmb.unlensedTT(l_1)*Ldotl_1
             result += self.cmb.unlensedTT(l_2)*Ldotl_2
@@ -404,13 +404,17 @@ class oh03_lensing_estimator(object):
                 data[:, counter] = cov_XY_AB[XY+AB]
                 counter += 1
 
+        cov_TE = interp1d(self.L, data[:, 10], kind='linear', bounds_error=False, fill_value=0.)
         # min variance estimator noise
         n_mv = np.zeros(self.Nl)
         for el in range(self.Nl):
             covmat = np.zeros((n_est, n_est))
             for i_est in range(n_est):
                 XY = est[i_est]
-                covmat[i_est, i_est] = self.var_d[XY](self.L[el])
+                if XY == 'TE':
+                    covmat[i_est, i_est] = cov_TE(self.L[el])
+                else:
+                    covmat[i_est, i_est] = self.var_d[XY](self.L[el])
                 for i2 in range(i_est+1, n_est):
                     AB = est[i2]
                     covmat[i_est, i2] = covmat[i2, i_est] = cov_XY_AB[XY+AB][el]
@@ -426,9 +430,9 @@ class oh03_lensing_estimator(object):
         data[:, -1] = n_mv
 
         if est == ['TT', 'EE', 'TE']:
-            np.savetxt('output/HO02_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_TT_EE_TE_only.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise)), data)
+            np.savetxt('output/OH03_flatsky_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_TT_EE_TE_only.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise)), data)
         elif est == ['TB', 'EB']:
-            np.savetxt('output/HO02_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_TB_EB_only.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise)), data)
+            np.savetxt('output/OH03_flatsky_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_TB_EB_only.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise)), data)
         else:
             np.savetxt(self.covar_out, data)
 
@@ -499,13 +503,14 @@ class oh03_lensing_estimator(object):
             L_p = np.linspace(2, 5000, 4999)
 
             fracdiff = (interp_OH03_TE(L_p)-interp_HO02_TE(L_p))/interp_HO02_TE(L_p)
+            # print fracdiff[:10]
 
             ax.plot(L_p, fracdiff, cl[e], ls=lines[0],
                     label='%s' % (clexp['name']))
         # ls = ax.get_lines()
         # leg1 = plt.legend([ls[i] for i in [0, 1]], [exp[i]['name'] for i in range(len(exp))], loc=1)
         # leg2 = plt.legend(custom_lines, ['TT-EE-TE', 'TB-EB'], loc=4)
-        ax.legend(prop={'size': 17}, loc='upper left', ncol=3, frameon=False,
+        ax.legend(prop={'size': 17}, loc='upper left', ncol=1, frameon=False,
                   labelspacing=0.2)
         ax.set_xscale('log')
         ax.set_xlim(2.0, clexp['lMaxP'])
@@ -516,6 +521,43 @@ class oh03_lensing_estimator(object):
         ax.set_xlabel(r'$L$', fontsize=22)
         ax.tick_params(axis='both', labelsize=16)
 
+    def plot_MV_comparison(self, exp):
+        lines = ["-", "--", "-."]
+        cl = ["b", "r", "g"]
+        # custom_lines = [Line2D([0], [0], color='b'), Line2D([0], [0], color='r')]
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        for e in range(len(exp)):
+            clexp = exp[e]
+            data = np.genfromtxt('output/HO02_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (clexp['name'], str(clexp['lMin']), str(clexp['lMaxT']), str(clexp['lMaxP']), str(clexp['beam']), str(clexp['noise_t'])))
+            L = data[:, 0]
+            interp_HO02_mv = interp1d(L, data[:, -1], kind='quadratic', bounds_error=False, fill_value=0.)
+
+            data2 = np.genfromtxt('output/OH03_flatsky_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (clexp['name'], str(clexp['lMin']), str(clexp['lMaxT']), str(clexp['lMaxP']), str(clexp['beam']), str(clexp['noise_t'])))
+            L2 = data2[:, 0]
+
+            interp_OH03_mv = interp1d(L2, data2[:, -1], kind='quadratic', bounds_error=False, fill_value=0.)
+
+            # L_p = np.logspace(np.log10(1.), np.log10(5000.), 201, 10.)
+            L_p = np.linspace(2, 5000, 4999)
+
+            fracdiff = (interp_OH03_mv(L_p)-interp_HO02_mv(L_p))/interp_HO02_mv(L_p)
+
+            ax.plot(L_p, fracdiff, cl[e], ls=lines[0],
+                    label='%s' % (clexp['name']))
+        # ls = ax.get_lines()
+        # leg1 = plt.legend([ls[i] for i in [0, 1]], [exp[i]['name'] for i in range(len(exp))], loc=1)
+        # leg2 = plt.legend(custom_lines, ['TT-EE-TE', 'TB-EB'], loc=4)
+        ax.legend(prop={'size': 17}, loc='upper right', ncol=1, frameon=False,
+                  labelspacing=0.2)
+        ax.set_xscale('log')
+        ax.set_xlim(2.0, clexp['lMaxP'])
+        # ax.set_ylim(0.8, 1.05)
+        # ax.hlines(y=1, xmin=min(L_p), xmax=max(L_p))  # , color='k--')
+        ax.set_ylabel(r'$(N_{L}^\mathrm{MV, OH03} - N_{L}^\mathrm{MV, HO02})/N_{L}^\mathrm{MV, HO02}$',
+                      fontsize=16)
+        ax.set_xlabel(r'$L$', fontsize=22)
+        ax.tick_params(axis='both', labelsize=16)
 
 if __name__ == '__main__':
     import time
@@ -547,43 +589,42 @@ if __name__ == '__main__':
 
     time0 = time()
 
-    exp = CMBS4
+    exp = HO02_ref
     cmb = Cell_cmb(exp)
 
     # expind = np.array([10., 50., 500., 1500.])
     # print cmb.totalTE(expind)
     # cmb = Cell_cmb(beam=beam, noise_t=noise_t, noise_p=noise_p, lMin=lMin,
     #                lMaxT=lMaxT, lMaxP=lMaxP)
-    
+
     est = ['TT', 'EE', 'TE', 'TB', 'EB']
     # est = ['TB', 'EB']  # , 'TE', 'TB', 'EB']
     # est = ['TT', 'EE', 'TE']
     # est = ['TT', 'TE', 'TB', 'EB']
     # est = ['TE', 'TB']
-    
+
     # cmb.plot_cell_2()
-    
+
     # changing the font of the text in the plots
     fam = "serif"
     plt.rcParams["font.family"] = fam
-    
-    
+
     ho02_est = ho.lensing_estimator(cmb)
-    
-    # ho02_est.calc_var(est)
+
+    ho02_est.calc_var(est)
     ho02_est.interp_var(est)
-    # ho02_est.calc_cov(est)
+    ho02_est.calc_cov(est)
     ho02_est.interp_cov(est)
-    
-    
+
     oh_est = oh03_lensing_estimator(cmb)
-    # oh_est.calc_var(est)
+    oh_est.calc_var(est)
     oh_est.interp_var(est)
-    # oh_est.calc_cov(est)
+    oh_est.calc_cov(est)
     oh_est.interp_cov(est)
-    
-    
-    multexp = [Planck_smica, SO, CMBS4]
+
+    multexp = [Planck_smica, SO, HO02_ref]
+
     oh_est.plot_TE_comparison(multexp)
+    oh_est.plot_MV_comparison(multexp)
 
     print time()-time0
