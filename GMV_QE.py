@@ -58,20 +58,6 @@ class lensing_estimator(object):
         # result = self.phi12(L, l_1, phi1) + phi1
         return result
 
-    """
-    def l1max(self, XY):
-        #
-        # max value for l1 and l2: taken to be same
-        #
-        if XY == 'TT':
-            return self.cmb.lMaxT
-        elif XY == 'EE' or XY == 'BB' or XY == 'EB':
-            return self.cmb.lMaxP
-        elif XY == 'TE' or XY == 'TB':
-            # taking the minimum of the two: this approach is suboptimal
-            return min(self.cmb.lMaxT, self.cmb.lMaxP)
-    """
-
     def f_XY(self, L, l_1, phi1, XY):
         """
         lensing response such that
@@ -287,7 +273,7 @@ class lensing_estimator(object):
             result *= 2*l_1  # **2
             """factor of 2 above because phi integral is symmetric. Thus we've
             put instead of 0 to 2pi, 2 times 0 to pi
-            Also, l_1^2 instead of l_1 because we are taking log spacing for
+            Also, l_1^2 instead of l_1 if we are taking log spacing for
             l_1"""
             result /= (2.*np.pi)**2
             idx = np.where((l_1 < l1min) | (l_1 > l1max) | (l_2 < l1min) | (l_2 > l1max))[0]
@@ -405,7 +391,7 @@ class lensing_estimator(object):
             result *= 2*l_1  # **2
             """factor of 2 above because phi integral is symmetric. Thus we've
             put instead of 0 to 2pi, 2 times 0 to pi
-            Also, l_1^2 instead of l_1 because we are taking log spacing for
+            Also, l_1^2 instead of l_1 because if are taking log spacing for
             l_1"""
             result /= (2.*np.pi)**2
             # result *= 2.

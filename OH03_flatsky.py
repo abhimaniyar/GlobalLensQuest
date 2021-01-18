@@ -210,7 +210,7 @@ class oh03_lensing_estimator(object):
             # d^2l_1 = dl_1*l_1*dphi1
             """factor of 2 above because phi integral is symmetric. Thus we've
             put instead of 0 to 2pi, 2 times 0 to pi
-            Also, l_1^2 instead of l_1 because we are taking log spacing for
+            Also, l_1^2 instead of l_1 if we are taking log spacing for
             l_1"""
             result /= (2.*np.pi)**2
             # """
@@ -347,7 +347,7 @@ class oh03_lensing_estimator(object):
             # d^2l_1 = dl_1*l_1*dphi1
             """factor of 2 above because phi integral is symmetric. Thus we've
             put instead of 0 to 2pi, 2 times 0 to pi
-            Also, l_1^2 instead of l_1 because we are taking log spacing for
+            Also, l_1^2 instead of l_1 if we are taking log spacing for
             l_1"""
             result /= (2.*np.pi)**2
 

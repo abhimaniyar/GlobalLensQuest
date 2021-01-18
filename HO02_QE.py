@@ -210,7 +210,7 @@ class lensing_estimator(object):
             # d^2l_1 = dl_1*l_1*dphi1
             """factor of 2 above because phi integral is symmetric. Thus we've
             put instead of 0 to 2pi, 2 times 0 to pi
-            Also, l_1^2 instead of l_1 because we are taking log spacing for
+            Also, l_1^2 instead of l_1 if we are taking log spacing for
             l_1"""
             result /= (2.*np.pi)**2
             # """
@@ -348,7 +348,7 @@ class lensing_estimator(object):
             # d^2l_1 = dl_1*l_1*dphi1
             """factor of 2 above because phi integral is symmetric. Thus we've
             put instead of 0 to 2pi, 2 times 0 to pi
-            Also, l_1^2 instead of l_1 because we are taking log spacing for
+            Also, l_1^2 instead of l_1 if we are taking log spacing for
             l_1"""
             result /= (2.*np.pi)**2
 
@@ -529,34 +529,6 @@ class lensing_estimator(object):
         ax.set_xscale('log')
         ax.tick_params(axis='both', labelsize=14)
         plt.show()
-
-    """   
-    def comp_manu(self):
-        d1 = np.loadtxt('variance_ind_lmin%s_lmaxT%s_lmaxP%s_own.txt' % (str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP)))
-        add_manu = '/Users/amaniyar/Workspace/Yacine_Qe/python/Manu/ForQuE-master/output/cmblensrec/cmb_beam1.0_noise1.0_nu143_nu143_lmin30_lmaxT10000_lmaxP10000_cmbs4/'
-        d2 = np.loadtxt(add_manu+'noise_q_XY.txt')
-        e = ['TT', 'EE', 'TE', 'TB', 'EB']
-        e_m = ['TT', 'TE', 'TB', 'EE', 'EB']
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        nEst = len(e)
-        for iEst in range(nEst):
-            XY = e[iEst]
-            ax.plot(self.L, d1[:, iEst+1], c=plt.cm.rainbow(iEst/6.), lw=1.5, label=XY+'Gg')
-            # ax.plot(self.L, self.L*(self.L+1)*d1[:, iEst+1]/(2*np.pi), c=plt.cm.rainbow(iEst/6.), lw=1.5, label=XY)
-            XY = e_m[iEst]
-            ax.plot(self.L, d2[:, iEst+1], c=plt.cm.rainbow(iEst/6.), ls = '--', lw=1.5, label=XY+'Manu')
-            # ax.plot(self.L, self.L*(self.L+1)*self.N_d[XY](self.L)/(2*np.pi), c=plt.cm.rainbow(iEst/6.), lw=1.5, label=XY)
-
-        ax.legend(loc=2, fontsize='8')  # , labelspacing=0.1)
-        ax.set_xscale('log')
-        ax.set_yscale('log', nonposy='mask')
-        ax.set_xlabel(r'$L$', fontsize=16)
-        ax.set_ylabel(r'$L(L+1)C_L^{dd}/2\pi$', fontsize=16)
-        ax.set_ylim((3.e-11, 0.1))
-        ax.set_xlim((2., 4.e4))
-        plt.show()
-    """
 
 
 if __name__ == '__main__':
