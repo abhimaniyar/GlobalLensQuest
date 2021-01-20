@@ -31,7 +31,7 @@ AdvACT = {"name": "AdvACT", "lMin": 30., "lMaxT": 6000., "lMaxP": 6000.,
          "beam": 1.4, "noise_t": 10., "noise_p": 10.*np.sqrt(2)}
 
 SO = {"name": "SO", "lMin": 30., "lMaxT": 3000., "lMaxP": 3000.,
-         "beam": 1.4, "noise_t": 5., "noise_p": 5.*np.sqrt(2)}
+         "beam": 1.4, "noise_t": 8., "noise_p": 8.*np.sqrt(2)}
 
 CMBS4 = {"name": "CMBS4", "lMin": 30., "lMaxT": 3000., "lMaxP": 3000.,
          "beam": 1., "noise_t": 1., "noise_p": 1.*np.sqrt(2)}
@@ -44,7 +44,8 @@ custom = {"name": "custom", "lMin": 30., "lMaxT": 2.e3, "lMaxP": 2.e3,
 
 time0 = time()
 
-exp = Planck_smica
+exp = CMBS4
+
 cmb = Cell_cmb(exp)
 
 est = ['TT', 'EE', 'TE', 'TB', 'EB']
@@ -57,15 +58,15 @@ est = ['TT', 'EE', 'TE', 'TB', 'EB']
 fam = "serif"
 plt.rcParams["font.family"] = fam
 
-
+# """
 # Global minimum variance estimator (our work)
 gmv_est = gmv.lensing_estimator(cmb)
 print "Running GMV estimator"
 gmv_est.calc_tvar()
 gmv_est.interp_tvar()
-gmv_est.plot_tvar()
+# gmv_est.plot_tvar()
 
-
+# """
 # HO02 estimator Hu and Okamoto (2002)
 ho02_est = ho.lensing_estimator(cmb)
 print "Running HO02 estimator"
@@ -73,6 +74,7 @@ ho02_est.calc_var(est)
 ho02_est.interp_var(est)
 ho02_est.calc_cov(est)
 ho02_est.interp_cov(est)
+# """
 
 if compare_HO02 == 1:
     pltcomp.plot_var_tvar(exp)
@@ -99,6 +101,7 @@ if calculate_ratio_ind_ho02_tmv == 1:
     pltcomp.plotvar_tvar_ratio(exp)
 
 
+# """
 # Suboptimal quadratic estimator (Planck lensing 2018)
 sqe_est = sqe.sqe_lensing_estimator(cmb)
 print "Running SQE estimator"
@@ -106,8 +109,9 @@ sqe_est.calc_lambda()
 sqe_est.interp_lambda()
 sqe_est.calc_cov()
 sqe_est.interp_cov()
-sqe_est.plot_cov()
+# sqe_est.plot_cov()
 
+# """
 # OH03 estimator (Okamoto and Hu 2003)
 oh_est = oh.oh03_lensing_estimator(cmb)
 print "Running OH03"
@@ -116,12 +120,16 @@ oh_est.interp_var(est)
 oh_est.calc_cov(est)
 oh_est.interp_cov(est)
 
+# """
+
 # comparison between different estimators for diff experiments
 multexp = [Planck_smica, SO, CMBS4]
-pltcomp.plotvar_tvar_ratio_multexp(multexp)
-pltcomp.plotvar_var_tvar_percent_multexp(multexp)
+# pltcomp.plotvar_tvar_ratio_multexp(multexp)
+# pltcomp.plotvar_var_tvar_percent_multexp(multexp)
 pltcomp.plot_plancklike_var_tvar_ratio_multexp(multexp)
-pltcomp.plot_mv_multest_multexp(multexp)
+# pltcomp.plot_mv_multest_multexp(multexp)
+# oh_est.plot_TE_comparison(multexp)
+oh_est.plot_MV_comparison(multexp)
 
 # SNT2, SNH2, cumSNT, cumSNH = tmv_est.SNR_comp(exp)
 

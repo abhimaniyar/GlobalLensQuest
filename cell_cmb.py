@@ -50,7 +50,6 @@ class Cell_cmb(object):
         #                            bounds_error=False, fill_value=0.)
 
         # lensed TT, EE, TE
-        # lens = np.loadtxt('../CAMB/qe_lensedCls.dat')
         lens = np.loadtxt('input/CAMB/qe_lensedCls.dat')
         fac = self.dl_to_cl(lens[:, 0])
         lens[:, 1] *= fac/cmb_out
