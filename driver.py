@@ -36,7 +36,7 @@ SO = {"name": "SO", "lMin": 30., "lMaxT": 3000., "lMaxP": 3000.,
 CMBS4 = {"name": "CMBS4", "lMin": 30., "lMaxT": 3000., "lMaxP": 3000.,
          "beam": 1., "noise_t": 1., "noise_p": 1.*np.sqrt(2)}
 
-Planck_smica = {"name": "Planck", "lMin": 100., "lMaxT": 3000., "lMaxP": 3000.,
+Planck_smica = {"name": "Planck", "lMin": 30., "lMaxT": 3000., "lMaxP": 3000.,
                 "beam": 5., "noise_t": 35., "noise_p": 60.}
 
 custom = {"name": "custom", "lMin": 30., "lMaxT": 2.e3, "lMaxP": 2.e3,
@@ -44,7 +44,7 @@ custom = {"name": "custom", "lMin": 30., "lMaxT": 2.e3, "lMaxP": 2.e3,
 
 time0 = time()
 
-exp = CMBS4
+exp = SO
 
 cmb = Cell_cmb(exp)
 
@@ -61,15 +61,16 @@ plt.rcParams["font.family"] = fam
 # """
 # Global minimum variance estimator (our work)
 gmv_est = gmv.lensing_estimator(cmb)
-print "Running GMV estimator"
+print ("Running GMV estimator")
 gmv_est.calc_tvar()
 gmv_est.interp_tvar()
 # gmv_est.plot_tvar()
+# """
 
 # """
 # HO02 estimator Hu and Okamoto (2002)
 ho02_est = ho.lensing_estimator(cmb)
-print "Running HO02 estimator"
+print ("Running HO02 estimator")
 ho02_est.calc_var(est)
 ho02_est.interp_var(est)
 ho02_est.calc_cov(est)
@@ -84,7 +85,7 @@ if compare_HO02 == 1:
 if calculate_ratio_ind_ho02_tmv == 1:
     est1 = ['TT', 'EE', 'TE']
     ho02_est = ho.lensing_estimator(cmb)
-    print "Running HO02 estimator for TT-EE-TE only"
+    print("Running HO02 estimator for TT-EE-TE only")
     ho02_est.calc_var(est1)
     ho02_est.interp_var(est1)
     ho02_est.calc_cov(est1)
@@ -92,7 +93,7 @@ if calculate_ratio_ind_ho02_tmv == 1:
 
     est2 = ['TB', 'EB']
     ho02_est = ho.lensing_estimator(cmb)
-    print "Running HO02 estimator for TB-EB only"
+    print("Running HO02 estimator for TB-EB only")
     ho02_est.calc_var(est2)
     ho02_est.interp_var(est2)
     ho02_est.calc_cov(est2)
@@ -104,7 +105,7 @@ if calculate_ratio_ind_ho02_tmv == 1:
 # """
 # Suboptimal quadratic estimator (Planck lensing 2018)
 sqe_est = sqe.sqe_lensing_estimator(cmb)
-print "Running SQE estimator"
+print ("Running SQE estimator")
 sqe_est.calc_lambda()
 sqe_est.interp_lambda()
 sqe_est.calc_cov()
@@ -112,11 +113,12 @@ sqe_est.interp_cov()
 # sqe_est.plot_cov()
 
 # """
+# """
 # OH03 estimator (Okamoto and Hu 2003)
 oh_est = oh.oh03_lensing_estimator(cmb)
-print "Running OH03"
-oh_est.calc_var(est)
-oh_est.interp_var(est)
+print ("Running OH03")
+oh_est.calc_lambda(est)
+oh_est.interp_lambda(est)
 oh_est.calc_cov(est)
 oh_est.interp_cov(est)
 
@@ -126,11 +128,13 @@ oh_est.interp_cov(est)
 multexp = [Planck_smica, SO, CMBS4]
 # pltcomp.plotvar_tvar_ratio_multexp(multexp)
 # pltcomp.plotvar_var_tvar_percent_multexp(multexp)
-pltcomp.plot_plancklike_var_tvar_ratio_multexp(multexp)
+# pltcomp.plot_plancklike_var_tvar_ratio_multexp(multexp)
 # pltcomp.plot_mv_multest_multexp(multexp)
-# oh_est.plot_TE_comparison(multexp)
-oh_est.plot_MV_comparison(multexp)
+# pltcomp.plot_OH03_TE_comparison(multexp)
+pltcomp.plot_OH03_MV_comparison(multexp)
+# pltcomp.plot_n0_n1_multexp(multexp)
+# pltcomp.plot_n1_gmv_sqe_multexp(multexp)
 
 # SNT2, SNH2, cumSNT, cumSNH = tmv_est.SNR_comp(exp)
 
-print time() - time0
+print(time() - time0)

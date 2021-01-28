@@ -28,6 +28,9 @@ class sqe_lensing_estimator(object):
         self.L = np.logspace(np.log10(1.), np.log10(2*self.l1Max+1.), 201, 10.)
         # self.L = np.linspace(1., 201., 1001)
         self.Nl = len(self.L)
+        self.N_phi = 50  # number of steps for angular integration steps
+        # reduce to 50 if you need around 0.6% max accuracy till L = 3000
+        # from 200 to 400, there is just 0.03% change in the noise curves till L=3000
         self.var_out = 'output/SQE_variance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise))
         self.lambda_out = 'output/SQE_lambda_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise))
 
@@ -88,30 +91,30 @@ class sqe_lensing_estimator(object):
         Ldotl_2 = L*l_2*np.cos(phi2)
         # """
         if XY == 'TT':
-            result = self.cmb.unlensedTT(l_1)*Ldotl_1
-            result += self.cmb.unlensedTT(l_2)*Ldotl_2
+            result = self.cmb.lensgradTT(l_1)*Ldotl_1
+            result += self.cmb.lensgradTT(l_2)*Ldotl_2
             # print result
             # sys.exit()
         elif XY == 'EE':
-            result = self.cmb.unlensedEE(l_1)*Ldotl_1
-            result += self.cmb.unlensedEE(l_2)*Ldotl_2
+            result = self.cmb.lensgradEE(l_1)*Ldotl_1
+            result += self.cmb.lensgradEE(l_2)*Ldotl_2
             result *= np.cos(2.*phi12)
         elif XY == 'TE':
             # there is a typo in HO02!!!!!!!!!
             # instead of cos(phi12) it should be cos(2*phi12)!!!!!
-            result = self.cmb.unlensedTE(l_1)*np.cos(2.*phi12)*Ldotl_1
-            result += self.cmb.unlensedTE(l_2)*Ldotl_2
+            result = self.cmb.lensgradTE(l_1)*np.cos(2.*phi12)*Ldotl_1
+            result += self.cmb.lensgradTE(l_2)*Ldotl_2
         elif XY == 'TB':
-            result = self.cmb.unlensedTE(l_1)*np.sin(2.*phi12)*Ldotl_1
+            result = self.cmb.lensgradTE(l_1)*np.sin(2.*phi12)*Ldotl_1
         elif XY == 'EB':
             # there is a typo in HO02!!!!!!!!!
             # instead of - it should be + between first and second term!!!!!
-            result = self.cmb.unlensedEE(l_1)*Ldotl_1
-            result += self.cmb.unlensedBB(l_2)*Ldotl_2
+            result = self.cmb.lensgradEE(l_1)*Ldotl_1
+            result += self.cmb.lensgradBB(l_2)*Ldotl_2
             result *= np.sin(2.*phi12)
         elif XY == 'BB':
-            result = self.cmb.unlensedBB(l_1)*Ldotl_1
-            result += self.cmb.unlensedBB(l_2)*Ldotl_2
+            result = self.cmb.lensgradBB(l_1)*Ldotl_1
+            result += self.cmb.lensgradBB(l_2)*Ldotl_2
             result *= np.cos(2.*phi12)
         """
         if XY == 'TT':
@@ -209,7 +212,7 @@ class sqe_lensing_estimator(object):
             return 0.
         # """
         l1 = np.linspace(l1min, l1max, int(l1max-l1min+1))
-        phil = np.linspace(0., np.pi, 30)
+        phil = np.linspace(0., np.pi, self.N_phi)
         int_1 = np.zeros(len(phil))
         for i in range(len(phil)):
             intgnd = integrand(l1, phil[i])
@@ -223,7 +226,7 @@ class sqe_lensing_estimator(object):
             result = 0.
 
         if result < 0.:
-            print L
+            print(L)
 
         return result
 
@@ -234,7 +237,7 @@ class sqe_lensing_estimator(object):
 
         pool = Pool(ncpus=4)
 
-        print "Computing Lambda(L)"
+        print("Computing Lambda(L)")
 
         def f(l):
             return self.lambda_sqe(l)
@@ -247,7 +250,7 @@ class sqe_lensing_estimator(object):
         np.savetxt(self.lambda_out, data)
 
     def interp_lambda(self):
-        print "Interpolating Lambda(L)"
+        print("Interpolating Lambda(L)")
         data = np.genfromtxt(self.lambda_out)
         L = data[:, 0]
         self.lambda_L = interp1d(L, data[:, -1], kind='linear',
@@ -387,7 +390,7 @@ class sqe_lensing_estimator(object):
 
         # """        
         l1 = np.linspace(l1min, l1max, int(l1max-l1min+1))
-        phil = np.linspace(0., np.pi, 30)
+        phil = np.linspace(0., np.pi, self.N_phi)
         int_1 = np.zeros(len(phil))
         for i in range(len(phil)):
             intgnd = integrand(l1, phil[i])
@@ -407,7 +410,7 @@ class sqe_lensing_estimator(object):
         data[:, 0] = np.copy(self.L)
         pool = Pool(ncpus=4)
 
-        print "Computing covariance"
+        print("Computing covariance")
 
         def f(l):
             return self.cov_sqe(l)
@@ -416,7 +419,7 @@ class sqe_lensing_estimator(object):
         np.savetxt(self.var_out, data)
 
     def interp_cov(self):
-        print "Interpolating covariances"
+        print("Interpolating covariances")
 
         data = np.genfromtxt(self.var_out)
         L = data[:, 0]
@@ -426,7 +429,7 @@ class sqe_lensing_estimator(object):
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
-        data2 = np.genfromtxt("input/CAMB/qe_lenspotentialCls.dat")
+        data2 = np.genfromtxt("input/CAMB/Julien_lenspotentialCls.dat")
         L = data2[:, 0]
         ax.plot(L, data2[:, 5], 'r-', lw=1.5, label=r'signal')
 
@@ -462,4 +465,4 @@ if __name__ == '__main__':
     smv_est.interp_cov()
     smv_est.plot_cov()
 
-    print time() - time0
+    print(time() - time0)

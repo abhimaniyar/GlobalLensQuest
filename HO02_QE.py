@@ -26,6 +26,9 @@ class lensing_estimator(object):
         self.L = np.logspace(np.log10(1.), np.log10(2*self.l1Max+1.), 201, 10.)
         # self.L = np.linspace(1., 201., 1001)
         self.Nl = len(self.L)
+        self.N_phi = 50  # number of steps for angular integration steps
+        # reduce to 50 if you need around 0.6% max accuracy till L = 3000
+        # from 200 to 400, there is just 0.03% change in the noise curves till L=3000
         self.var_out = 'output/HO02_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise))
         self.covar_out = 'output/HO02_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise))
 
@@ -86,30 +89,30 @@ class lensing_estimator(object):
         Ldotl_2 = L*l_2*np.cos(phi2)
         # """
         if XY == 'TT':
-            result = self.cmb.unlensedTT(l_1)*Ldotl_1
-            result += self.cmb.unlensedTT(l_2)*Ldotl_2
+            result = self.cmb.lensgradTT(l_1)*Ldotl_1
+            result += self.cmb.lensgradTT(l_2)*Ldotl_2
             # print result
             # sys.exit()
         elif XY == 'EE':
-            result = self.cmb.unlensedEE(l_1)*Ldotl_1
-            result += self.cmb.unlensedEE(l_2)*Ldotl_2
+            result = self.cmb.lensgradEE(l_1)*Ldotl_1
+            result += self.cmb.lensgradEE(l_2)*Ldotl_2
             result *= np.cos(2.*phi12)
         elif XY == 'TE':
             # there is a typo in HO02!!!!!!!!!
             # instead of cos(phi12) it should be cos(2*phi12)!!!!!
-            result = self.cmb.unlensedTE(l_1)*np.cos(2.*phi12)*Ldotl_1
-            result += self.cmb.unlensedTE(l_2)*Ldotl_2
+            result = self.cmb.lensgradTE(l_1)*np.cos(2.*phi12)*Ldotl_1
+            result += self.cmb.lensgradTE(l_2)*Ldotl_2
         elif XY == 'TB':
-            result = self.cmb.unlensedTE(l_1)*np.sin(2.*phi12)*Ldotl_1
+            result = self.cmb.lensgradTE(l_1)*np.sin(2.*phi12)*Ldotl_1
         elif XY == 'EB':
             # there is a typo in HO02!!!!!!!!!
             # instead of - it should be + between first and second term!!!!!
-            result = self.cmb.unlensedEE(l_1)*Ldotl_1
-            result += self.cmb.unlensedBB(l_2)*Ldotl_2
+            result = self.cmb.lensgradEE(l_1)*Ldotl_1
+            result += self.cmb.lensgradBB(l_2)*Ldotl_2
             result *= np.sin(2.*phi12)
         elif XY == 'BB':
-            result = self.cmb.unlensedBB(l_1)*Ldotl_1
-            result += self.cmb.unlensedBB(l_2)*Ldotl_2
+            result = self.cmb.lensgradBB(l_1)*Ldotl_1
+            result += self.cmb.lensgradBB(l_2)*Ldotl_2
             result *= np.cos(2.*phi12)
         """
         if XY == 'TT':
@@ -224,7 +227,7 @@ class lensing_estimator(object):
 
         l1 = np.linspace(l1min, l1max, int(l1max-l1min+1))
         # l1 = np.logspace(np.log10(l1min), np.log10(l1max), int(l1max-l1min+1))
-        phi1 = np.linspace(0., np.pi, 30)
+        phi1 = np.linspace(0., np.pi, self.N_phi)
         int_1 = np.zeros(len(phi1))
         for i in range(len(phi1)):
             intgnd = integrand(l1, phi1[i])
@@ -238,7 +241,7 @@ class lensing_estimator(object):
             result = 0.
 
         if result < 0.:
-            print L
+            print(L)
 
         return result
 
@@ -249,7 +252,7 @@ class lensing_estimator(object):
         n_est = len(est)
         for i_est in range(n_est):
             XY = est[i_est]
-            print "Computing variance for " + XY
+            print("Computing variance for " + XY)
 
             def f(l):
                 return self.var_individual(l, XY)
@@ -265,7 +268,7 @@ class lensing_estimator(object):
 
     def interp_var(self, est):
 
-        print "Loading variances"
+        print("Loading variances")
 
         self.var_d = {}
         data = np.genfromtxt(self.var_out)
@@ -282,7 +285,7 @@ class lensing_estimator(object):
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
-        data = np.genfromtxt("input/CAMB/qe_lens_lenspotentialCls.dat")
+        data = np.genfromtxt("input/CAMB/Julien_lenspotentialCls.dat")
         L = data[:, 0]
         ax.plot(L, data[:, 5], 'r-', lw=1.5, label=r'signal')
 
@@ -360,7 +363,7 @@ class lensing_estimator(object):
 
         # """        
         l1 = np.linspace(l1min, l1max, int(l1max-l1min+1))
-        phi1 = np.linspace(0., np.pi, 30)
+        phi1 = np.linspace(0., np.pi, self.N_phi)
         int_1 = np.zeros(len(phi1))
         for i in range(len(phi1)):
             intgnd = integrand(l1, phi1[i])
@@ -390,7 +393,7 @@ class lensing_estimator(object):
             cov_XY_AB[XY+XY] = self.var_d[XY](self.L)
             for i2 in range(i_est+1, n_est):
                 AB = est[i2]
-                print "Computing covariance for " + XY + "-" + AB
+                print("Computing covariance for " + XY + "-" + AB)
 
                 def f(l):
                     return self.covariance(l, XY, AB)
@@ -415,7 +418,7 @@ class lensing_estimator(object):
                 n_mv[el] = 1./np.sum(invcov)
                 # np.savetxt('covmat.txt', covmat)
             except:
-                print "exception while inverting the covariance matrix at L = %s !" % str(el)
+                print("exception while inverting the covariance matrix at L = %s !" % str(el))
                 pass
 
         data[:, -1] = n_mv
@@ -428,7 +431,7 @@ class lensing_estimator(object):
             np.savetxt(self.covar_out, data)
 
     def interp_cov(self, est):
-        print "Interpolating covariances"
+        print("Interpolating covariances")
 
         self.cov_d = {}
         data = np.genfromtxt(self.covar_out)
@@ -451,7 +454,7 @@ class lensing_estimator(object):
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
-        data2 = np.genfromtxt("input/CAMB/qe_lenspotentialCls.dat")
+        data2 = np.genfromtxt("input/CAMB/Julien_lenspotentialCls.dat")
         L = data2[:, 0]
         ax.plot(L, data2[:, 5], 'r-', lw=1.5, label=r'signal')
 
@@ -574,4 +577,4 @@ if __name__ == '__main__':
     l_est.plot_corrcoef(est)
     # l_est.comp_manu()
     # """
-    print time()-time0
+    print(time()-time0)

@@ -24,7 +24,11 @@ class lensing_estimator(object):
         self.L = np.logspace(np.log10(1.), np.log10(2*self.l1Max+1.), 201, 10.)
         # self.L = np.logspace(np.log10(1.), np.log10(2*self.l1Max+1.), 51, 10.)
         self.Nl = len(self.L)
+        self.N_phi = 50  # number of steps for angular integration steps
+        # reduce to 50 if you need around 0.6% max accuracy till L = 3000
+        # from 200 to 400, there is just 0.03% change in the noise curves till L=3000
         self.var_out = 'output/True_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise))
+
 
     """
     L = l1 + l2
@@ -72,28 +76,28 @@ class lensing_estimator(object):
         Ldotl_2 = L*l_2*np.cos(phi2)
         # """
         if XY == 'TT':
-            result = self.cmb.unlensedTT(l_1)*Ldotl_1
-            result += self.cmb.unlensedTT(l_2)*Ldotl_2
+            result = self.cmb.lensgradTT(l_1)*Ldotl_1
+            result += self.cmb.lensgradTT(l_2)*Ldotl_2
         elif XY == 'EE':
-            result = self.cmb.unlensedEE(l_1)*Ldotl_1
-            result += self.cmb.unlensedEE(l_2)*Ldotl_2
+            result = self.cmb.lensgradEE(l_1)*Ldotl_1
+            result += self.cmb.lensgradEE(l_2)*Ldotl_2
             result *= np.cos(2.*phi12)
         elif XY == 'TE':
             # there is a typo in HO02!!!!!!!!!
             # instead of cos(phi12) it should be cos(2*phi12)!!!!!
-            result = self.cmb.unlensedTE(l_1)*np.cos(2.*phi12)*Ldotl_1
-            result += self.cmb.unlensedTE(l_2)*Ldotl_2
+            result = self.cmb.lensgradTE(l_1)*np.cos(2.*phi12)*Ldotl_1
+            result += self.cmb.lensgradTE(l_2)*Ldotl_2
         elif XY == 'TB':
-            result = self.cmb.unlensedTE(l_1)*np.sin(2.*phi12)*Ldotl_1
+            result = self.cmb.lensgradTE(l_1)*np.sin(2.*phi12)*Ldotl_1
         elif XY == 'EB':
             # there is a typo in HO02!!!!!!!!!
             # instead of - it should be + between first and second term!!!!!
-            result = self.cmb.unlensedEE(l_1)*Ldotl_1
-            result += self.cmb.unlensedBB(l_2)*Ldotl_2
+            result = self.cmb.lensgradEE(l_1)*Ldotl_1
+            result += self.cmb.lensgradBB(l_2)*Ldotl_2
             result *= np.sin(2.*phi12)
         elif XY == 'BB':
-            result = self.cmb.unlensedBB(l_1)*Ldotl_1
-            result += self.cmb.unlensedBB(l_2)*Ldotl_2
+            result = self.cmb.lensgradBB(l_1)*Ldotl_1
+            result += self.cmb.lensgradBB(l_2)*Ldotl_2
             result *= np.cos(2.*phi12)
         """
         if XY == 'TT':
@@ -256,19 +260,10 @@ class lensing_estimator(object):
         def integrand(l_1, phil):
 
             l_2 = self.l2(L, l_1, phil)
-            
-            # """
-            """
-            if l_1 < l1min or l_2 < l1min or l_1 > l1max or l_2 > l1max:
-                return 0.
-            # """
 
             M1invf1 = self.F1prime(L, l_1, phil)
             f_1 = self.f_1(L, l_1, phil)
             Fdotf = np.sum(M1invf1*f_1, -1)
-            # Fdotf = np.diag(np.matmul(M1invf1, f_1.transpose()))
-            # print np.shape(M1invf1), np.shape(f_1), np.shape(M1invf1*f_1), np.shape(Fdotf)
-            # Fdotf = np.sum(F1p*f_1)
             result = Fdotf
             result *= 2*l_1  # **2
             """factor of 2 above because phi integral is symmetric. Thus we've
@@ -277,14 +272,13 @@ class lensing_estimator(object):
             l_1"""
             result /= (2.*np.pi)**2
             idx = np.where((l_1 < l1min) | (l_1 > l1max) | (l_2 < l1min) | (l_2 > l1max))[0]
-            # pjust as a precaution!!
             # idx = np.where((l_2 < l1min) | (l_2 > l1max))
             result[idx] = 0.
             return result
 
         l1 = np.linspace(l1min, l1max, int(l1max-l1min+1))
         # l1 = np.logspace(np.log10(l1min), np.log10(l1max), int(l1max-l1min+1))
-        phi1 = np.linspace(0., np.pi, 30)
+        phi1 = np.linspace(0., np.pi, self.N_phi)
         int_1 = np.zeros(len(phi1))
         for i in range(len(phi1)):
             intgnd = integrand(l1, phi1[i])
@@ -302,7 +296,7 @@ class lensing_estimator(object):
             result = 0.
 
         if result < 0.:
-            print L
+            print(L)
         return result
 
     def M_2(self, L, l_1, phi1):
@@ -374,14 +368,7 @@ class lensing_estimator(object):
         # """
 
         def integrand(l_1, phil):
-            """
-            # check integration bounds
-            # """
             l_2 = self.l2(L, l_1, phil)
-            # """
-            """
-            if l_1 < l1min or l_2 < l1min or l_1 > l1max or l_2 > l1max:
-                return 0.
             # """
 
             F2p = self.F2prime(L, l_1, phil)
@@ -396,6 +383,9 @@ class lensing_estimator(object):
             result /= (2.*np.pi)**2
             # result *= 2.
             # idx = np.where((l_2 < l1min) | (l_2 > l1max))
+            """
+            # check integration bounds
+            # """
             idx = np.where((l_1 < l1min) | (l_1 > l1max) | (l_2 < l1min) | (l_2 > l1max))
             # just as a precaution
             result[idx] = 0.
@@ -403,7 +393,7 @@ class lensing_estimator(object):
 
         l1 = np.linspace(l1min, l1max, int(l1max-l1min+1))
         # l1 = np.logspace(np.log10(l1min), np.log10(l1max), int(l1max-l1min+1))
-        phi1 = np.linspace(0., np.pi, 30)
+        phi1 = np.linspace(0., np.pi, self.N_phi)
         int_1 = np.zeros(len(phi1))
         for i in range(len(phi1)):
             intgnd = integrand(l1, phi1[i])
@@ -420,7 +410,7 @@ class lensing_estimator(object):
             result = 0.
 
         if result < 0.:
-            print L
+            print(L)
         return result
 
     def var_d(self, var_d1, var_d2):
@@ -445,22 +435,21 @@ class lensing_estimator(object):
             # print self.L[i]
             data[i, 1] = f1(self.L[i])
         """
-        print "Computing variance for d1"
+        print("Computing variance for d1")
         data[:, 1] = np.array(pool.map(f1, self.L))
 
-        print "Computing variance for d2"
+        print("Computing variance for d2")
         data[:, 2] = np.array(pool.map(f2, self.L))
 
-        print "Computing variance for d"
+        print("Computing variance for d")
         data[:, 3] = self.var_d(data[:, 1], data[:, 2])
 
         # data[:, 3] = self.var_d(2.*data[:, 1], 2.*data[:, 1])
 
         np.savetxt(self.var_out, data)
-        # print self.var_out
 
     def interp_tvar(self):
-        print "Interpolating variances"
+        print("Interpolating variances")
 
         self.N_d = {}
         data = np.genfromtxt(self.var_out)
@@ -477,7 +466,7 @@ class lensing_estimator(object):
         self.N_d['d'] = interp1d(L, norm, kind='quadratic', bounds_error=False, fill_value=0.)
 
     def plot_tvar(self):
-        data = np.genfromtxt("input/CAMB/qe_lenspotentialCls.dat")
+        data = np.genfromtxt("input/CAMB/Julien_lenspotentialCls.dat")
         L = data[:, 0]  # data[:, 5] = l(l+1)C^dd_ell/2 pi = (l(l+1))**2*C^phiphi_ell/2 pi
         clphiphi = data[:, 5]*(2.*np.pi)/(L*(L+1))**2
 
@@ -518,7 +507,7 @@ class lensing_estimator(object):
         plt.show()
 
     def SNR_comp(self, exp):
-        data1 = np.genfromtxt("input/CAMB/qe_lenspotentialCls.dat")
+        data1 = np.genfromtxt("input/CAMB/Julien_lenspotentialCls.dat")
         L1 = data1[:, 0]
         cldd = data1[:, 5]*2*np.pi/(L1*(L1+1))
         clphiphi = 2*np.pi*cldd/(L1*(L1+1))**2
@@ -581,7 +570,7 @@ if __name__ == '__main__':
     l_est.cmb.plot_cell()
     # """
 
-    print time()-time0
+    print(time()-time0)
 
     # """
     # l_est.calc_tvar()

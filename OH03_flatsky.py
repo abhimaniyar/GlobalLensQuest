@@ -26,7 +26,10 @@ class oh03_lensing_estimator(object):
         self.L = np.logspace(np.log10(1.), np.log10(2*self.l1Max+1.), 201, 10.)
         # self.L = np.linspace(1., 201., 1001)
         self.Nl = len(self.L)
-        self.var_out = 'output/OH03_flatsky_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise))
+        self.N_phi = 50  # number of steps for angular integration steps
+        # reduce to 50 if you need around 0.6% max accuracy till L = 3000
+        # from 200 to 400, there is just 0.03% change in the noise curves till L=3000
+        self.lambda_out = 'output/OH03_flatsky_lambda_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise))
         self.covar_out = 'output/OH03_flatsky_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise))
 
     """
@@ -69,7 +72,7 @@ class oh03_lensing_estimator(object):
         elif XY == 'EE' or XY == 'BB' or XY == 'EB':
             return self.cmb.lMaxP
         elif XY == 'TE' or XY == 'TB':
-            # taking the minimum of the two: this approach is suboptimal
+            # if taking the minimum of the two: that approach is suboptimal
             return max(self.cmb.lMaxT, self.cmb.lMaxP)
 
     def f_XY(self, L, l_1, phi1, XY):
@@ -86,30 +89,30 @@ class oh03_lensing_estimator(object):
         Ldotl_2 = L*l_2*np.cos(phi2)
         # """
         if XY == 'TT':
-            result = self.cmb.unlensedTT(l_1)*Ldotl_1
-            result += self.cmb.unlensedTT(l_2)*Ldotl_2
+            result = self.cmb.lensgradTT(l_1)*Ldotl_1
+            result += self.cmb.lensgradTT(l_2)*Ldotl_2
             # print result
             # sys.exit()
         elif XY == 'EE':
-            result = self.cmb.unlensedEE(l_1)*Ldotl_1
-            result += self.cmb.unlensedEE(l_2)*Ldotl_2
+            result = self.cmb.lensgradEE(l_1)*Ldotl_1
+            result += self.cmb.lensgradEE(l_2)*Ldotl_2
             result *= np.cos(2.*phi12)
         elif XY == 'TE':
             # there is a typo in HO02!!!!!!!!!
             # instead of cos(phi12) it should be cos(2*phi12)!!!!!
-            result = self.cmb.unlensedTE(l_1)*np.cos(2.*phi12)*Ldotl_1
-            result += self.cmb.unlensedTE(l_2)*Ldotl_2
+            result = self.cmb.lensgradTE(l_1)*np.cos(2.*phi12)*Ldotl_1
+            result += self.cmb.lensgradTE(l_2)*Ldotl_2
         elif XY == 'TB':
-            result = self.cmb.unlensedTE(l_1)*np.sin(2.*phi12)*Ldotl_1
+            result = self.cmb.lensgradTE(l_1)*np.sin(2.*phi12)*Ldotl_1
         elif XY == 'EB':
             # there is a typo in HO02!!!!!!!!!
             # instead of - it should be + between first and second term!!!!!
-            result = self.cmb.unlensedEE(l_1)*Ldotl_1
-            result += self.cmb.unlensedBB(l_2)*Ldotl_2
+            result = self.cmb.lensgradEE(l_1)*Ldotl_1
+            result += self.cmb.lensgradBB(l_2)*Ldotl_2
             result *= np.sin(2.*phi12)
         elif XY == 'BB':
-            result = self.cmb.unlensedBB(l_1)*Ldotl_1
-            result += self.cmb.unlensedBB(l_2)*Ldotl_2
+            result = self.cmb.lensgradBB(l_1)*Ldotl_1
+            result += self.cmb.lensgradBB(l_2)*Ldotl_2
             result *= np.cos(2.*phi12)
         """
         if XY == 'TT':
@@ -184,11 +187,9 @@ class oh03_lensing_estimator(object):
             result = numerator/denominator
         return result
 
-    def var_individual(self, L, XY):
+    def lambda_individual(self, L, XY):
         """
-        Variance of the QE for individual XY. Same as the
-        normalization of the \phi_XY estimator. Such that norm = 1/(\int F*f)
-        such that \phi_XY = norm* \int F*(XY)
+        Effective normalization of the QE for individual XY.
         """
         l1min = self.l1Min
         l1max = self.l1max(XY)
@@ -200,10 +201,6 @@ class oh03_lensing_estimator(object):
         def integrand(l_1, phil):
 
             l_2 = self.l2(L, l_1, phil)
-            """
-            if l_1 < l1min or l_2 < l1min or l_1 > l1max or l_2 > l1max:
-                return 0.
-            """
             result = self.f_XY(L, l_1, phil, XY)*self.F_XY(L, l_1, phil, XY)
 
             result *= 2*l_1  # **2
@@ -224,7 +221,7 @@ class oh03_lensing_estimator(object):
 
         l1 = np.linspace(l1min, l1max, int(l1max-l1min+1))
         # l1 = np.logspace(np.log10(l1min), np.log10(l1max), int(l1max-l1min+1))
-        phi1 = np.linspace(0., np.pi, 30)
+        phi1 = np.linspace(0., np.pi, self.N_phi)
         int_1 = np.zeros(len(phi1))
         for i in range(len(phi1)):
             intgnd = integrand(l1, phi1[i])
@@ -238,54 +235,54 @@ class oh03_lensing_estimator(object):
             result = 0.
 
         if result < 0.:
-            print L
+            print(L)
 
         return result
 
-    def calc_var(self, est):
+    def calc_lambda(self, est):
         data = np.zeros((self.Nl, 6))
         data[:, 0] = np.copy(self.L)
         pool = Pool(ncpus=4)
         n_est = len(est)
         for i_est in range(n_est):
             XY = est[i_est]
-            print "Computing variance for " + XY
+            print("Computing lambda for " + XY)
 
             def f(l):
-                return self.var_individual(l, XY)
+                return self.lambda_individual(l, XY)
 
             data[:, i_est+1] = np.array(pool.map(f, self.L))
 
-        np.savetxt(self.var_out, data)
+        np.savetxt(self.lambda_out, data)
 
-    def interp_var(self, est):
+    def interp_lambda(self, est):
 
-        print "Loading variances"
+        print("Loading lambdas")
 
-        self.var_d = {}
-        data = np.genfromtxt(self.var_out)
+        self.lambda_d = {}
+        data = np.genfromtxt(self.lambda_out)
         L = data[:, 0]
 
         n_est = len(est)
         for i_est in range(n_est):
             XY = est[i_est]
             var = data[:, i_est+1].copy()
-            self.var_d[XY] = interp1d(L, var, kind='linear',
+            self.lambda_d[XY] = interp1d(L, var, kind='linear',
                                       bounds_error=False, fill_value=0.)
 
-    def plot_var(self, est):
+    def plot_lambda(self, est):
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
-        data = np.genfromtxt("input/CAMB/qe_lens_lenspotentialCls.dat")
+        data = np.genfromtxt("input/CAMB/Julien_lenspotentialCls.dat")
         L = data[:, 0]
         ax.plot(L, data[:, 5], 'r-', lw=1.5, label=r'signal')
 
         n_est = len(est)
         for i_est in range(n_est):
             XY = est[i_est]
-            ax.plot(self.L, self.L*(self.L+1)*self.var_d[XY](self.L)/(2*np.pi), c=plt.cm.rainbow(i_est/6.), lw=1.5, label=XY)
-            # ax.plot(self.L, self.var_d[XY](self.L), c=plt.cm.rainbow(i_est/6.), lw=1.5, label=XY)
+            ax.plot(self.L, self.L*(self.L+1)*self.lambda_d[XY](self.L)/(2*np.pi), c=plt.cm.rainbow(i_est/6.), lw=1.5, label=XY)
+            # ax.plot(self.L, self.lambda_d[XY](self.L), c=plt.cm.rainbow(i_est/6.), lw=1.5, label=XY)
 
         ax.legend(loc=2, fontsize='8')
         ax.set_xscale('log')
@@ -317,11 +314,6 @@ class oh03_lensing_estimator(object):
 
             l_2 = self.l2(L, l_1, phil)
             phi2 = self.phi2(L, l_1, phil)
-
-            """
-            if l_1 < l1min or l_2 < l1min or l_1 > l1max or l_2 > l1max:
-                return 0.
-            # """
 
             if XY == 'TT' and AB == 'EE':
                 a = self.F_XY(L, l_1, phil, AB)*self.cmb.totalTE(l_1)*self.cmb.totalTE(l_2)
@@ -359,7 +351,7 @@ class oh03_lensing_estimator(object):
 
         # """        
         l1 = np.linspace(l1min, l1max, int(l1max-l1min+1))
-        phi1 = np.linspace(0., np.pi, 30)
+        phi1 = np.linspace(0., np.pi, self.N_phi)
         int_1 = np.zeros(len(phi1))
         for i in range(len(phi1)):
             intgnd = integrand(l1, phi1[i])
@@ -368,7 +360,7 @@ class oh03_lensing_estimator(object):
         result = int_l1
         # """
 
-        result *= self.var_d[XY](L)*self.var_d[AB](L)
+        result *= self.lambda_d[XY](L)*self.lambda_d[AB](L)
         result *= 1./L**2
 
         if not np.isfinite(result):
@@ -386,15 +378,15 @@ class oh03_lensing_estimator(object):
         counter = 1
         for i_est in range(n_est):
             XY = est[i_est]
-            # cov_XY_AB[XY+XY] = self.var_d[XY](self.L)
+            # cov_XY_AB[XY+XY] = self.lambda_d[XY](self.L)
             for i2 in range(i_est, n_est):
                 AB = est[i2]
                 if (XY == 'TT')*(AB == 'TT') or (XY == 'EE')*(AB == 'EE') or \
                    (XY == 'TB')*(AB == 'TB') or (XY == 'EB')*(AB == 'EB'):
-                    print "Covariance for " + XY + "-" + AB + " is variance for " + XY
-                    cov_XY_AB[XY+XY] = self.var_d[XY](self.L)
+                    print("Covariance for " + XY + "-" + AB + " is variance for " + XY)
+                    cov_XY_AB[XY+XY] = self.lambda_d[XY](self.L)
                 else:
-                    print "Computing covariance for " + XY + "-" + AB
+                    print("Computing covariance for " + XY + "-" + AB)
 
                     def f(l):
                         return self.covariance(l, XY, AB)
@@ -414,7 +406,7 @@ class oh03_lensing_estimator(object):
                 if XY == 'TE':
                     covmat[i_est, i_est] = cov_TE(self.L[el])
                 else:
-                    covmat[i_est, i_est] = self.var_d[XY](self.L[el])
+                    covmat[i_est, i_est] = self.lambda_d[XY](self.L[el])
                 for i2 in range(i_est+1, n_est):
                     AB = est[i2]
                     covmat[i_est, i2] = covmat[i2, i_est] = cov_XY_AB[XY+AB][el]
@@ -424,7 +416,7 @@ class oh03_lensing_estimator(object):
                 n_mv[el] = 1./np.sum(invcov)
                 # np.savetxt('covmat.txt', covmat)
             except:
-                print "exception while inverting the covariance matrix at L = %s !" % str(el)
+                print("exception while inverting the covariance matrix at L = %s !" % str(el))
                 pass
 
         data[:, -1] = n_mv
@@ -437,7 +429,7 @@ class oh03_lensing_estimator(object):
             np.savetxt(self.covar_out, data)
 
     def interp_cov(self, est):
-        print "Interpolating covariances"
+        print("Interpolating covariances")
 
         self.cov_d = {}
         data = np.genfromtxt(self.covar_out)
@@ -454,22 +446,22 @@ class oh03_lensing_estimator(object):
                 counter += 1
 
         nmv = data[:, -1]
-        self.var_d['mv'] = interp1d(L, nmv, kind='linear', bounds_error=False, fill_value=0.)
+        self.lambda_d['mv'] = interp1d(L, nmv, kind='linear', bounds_error=False, fill_value=0.)
 
     def plot_cov(self, est):
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
-        data2 = np.genfromtxt("input/CAMB/qe_lenspotentialCls.dat")
+        data2 = np.genfromtxt("input/CAMB/Julien_lenspotentialCls.dat")
         L = data2[:, 0]
         ax.plot(L, data2[:, 5], 'r-', lw=1.5, label=r'signal')
 
         n_est = len(est)
         for i_est in range(n_est):
             XY = est[i_est]
-            ax.plot(self.L, self.L*(self.L+1)*self.var_d[XY](self.L)/(2*np.pi), c=plt.cm.rainbow(i_est/6.), lw=1.5, label=XY)
+            ax.plot(self.L, self.L*(self.L+1)*self.lambda_d[XY](self.L)/(2*np.pi), c=plt.cm.rainbow(i_est/6.), lw=1.5, label=XY)
 
-        ax.plot(self.L, self.L*(self.L+1)*self.var_d['mv'](self.L)/(2*np.pi), 'k', lw=1.5, label='min var')
+        ax.plot(self.L, self.L*(self.L+1)*self.lambda_d['mv'](self.L)/(2*np.pi), 'k', lw=1.5, label='min var')
 
         ax.legend(loc=2, fontsize='12')  # , labelspacing=0.1)
         ax.set_xscale('log')
@@ -548,6 +540,7 @@ class oh03_lensing_estimator(object):
         # ls = ax.get_lines()
         # leg1 = plt.legend([ls[i] for i in [0, 1]], [exp[i]['name'] for i in range(len(exp))], loc=1)
         # leg2 = plt.legend(custom_lines, ['TT-EE-TE', 'TB-EB'], loc=4)
+        ax.hlines(0., 2.0, clexp['lMaxP'], 'k')
         ax.legend(prop={'size': 17}, loc='upper right', ncol=1, frameon=False,
                   labelspacing=0.2)
         ax.set_xscale('log')
@@ -617,8 +610,8 @@ if __name__ == '__main__':
     ho02_est.interp_cov(est)
 
     oh_est = oh03_lensing_estimator(cmb)
-    oh_est.calc_var(est)
-    oh_est.interp_var(est)
+    oh_est.calc_lambda(est)
+    oh_est.interp_lambda(est)
     oh_est.calc_cov(est)
     oh_est.interp_cov(est)
 
@@ -627,4 +620,4 @@ if __name__ == '__main__':
     oh_est.plot_TE_comparison(multexp)
     oh_est.plot_MV_comparison(multexp)
 
-    print time()-time0
+    print(time()-time0)
