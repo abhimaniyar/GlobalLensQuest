@@ -5,7 +5,7 @@ Comparison of various CMB lensing quadratic estimators in terms of their noise p
 * Global minimum variance quadratic estimator based on an alternate derivation
 * Standard Hu & Okamoto 2002 quadratic estimators from temperature and polarization. This is not the most-optimum quadratic estimator contrary to what was thought before
 * Okamoto and Hu 2003 full-sky version of Hu and Okamoto estimators. Has a provision of setting C^{TE}_\ell = 0 to have a separation in the configuration space
-* Sub-optimal quadratic estimator. This was used in the Planck 2018 lensing analysis where they set C^{TE}_\ell = 0 in their covariance matrix. Results in an estimator suboptimal even than Hu and Okamoto 2002
+* Sub-optimal quadratic estimator. This was used in the Planck 2015, 2018 and SPT 2019 lensing analysis where they set C^{TE}_\ell = 0 in their inverse filter matrix. Results in an estimator suboptimal even than Hu and Okamoto 2002
 
 Please note that we use lensed gradient CMB spectra here to avoid N(1) bias here instead of unlensed CMB power spctra while calculating the lensing response functions. 
 Requires numpy for computation and matplotlib for plotting
@@ -16,5 +16,6 @@ python driver.py
 ```
 This code uses some of the structure from Manu Schaan's code ForQuE found at https://github.com/EmmanuelSchaan/ForQuE
 
+Hope you find this code useful! If you use this code in a publication, please cite https://arxiv.org/abs/2101.12193
 If you have any comments, suggestions or questions, please do not hesitate to contact me: abhishek.maniyar@nyu.edu
 
