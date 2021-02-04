@@ -16,6 +16,7 @@ python driver.py
 ```
 This code uses some of the structure from Manu Schaan's code ForQuE found at https://github.com/EmmanuelSchaan/ForQuE
 
-Hope you find this code useful! If you use this code in a publication, please cite https://arxiv.org/abs/2101.12193
+Hope you find this code useful! If you use this code in a publication, please cite https://arxiv.org/abs/2101.12193.
+
 If you have any comments, suggestions or questions, please do not hesitate to contact me: abhishek.maniyar@nyu.edu
 
