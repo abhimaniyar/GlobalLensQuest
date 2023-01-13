@@ -29,8 +29,8 @@ class lensing_estimator(object):
         self.N_phi = 50  # number of steps for angular integration steps
         # reduce to 50 if you need around 0.6% max accuracy till L = 3000
         # from 200 to 400, there is just 0.03% change in the noise curves till L=3000
-        self.var_out = 'output/HO02_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise))
-        self.covar_out = 'output/HO02_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise))
+        self.var_out = 'output/HO02_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise), str(self.N_phi))
+        self.covar_out = 'output/HO02_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise), str(self.N_phi))
 
     """
     L = l1 + l2
@@ -160,6 +160,7 @@ class lensing_estimator(object):
             numerator = self.f_XY(L, l_1, phi1, XY)
             denominator = 2.*self.cmb.totalTT(l_1)*self.cmb.totalTT(l_2)
             result = numerator/denominator
+            print (result)
         elif XY == 'EE':
             numerator = self.f_XY(L, l_1, phi1, XY)
             denominator = 2.*self.cmb.totalEE(l_1)*self.cmb.totalEE(l_2)
@@ -260,9 +261,9 @@ class lensing_estimator(object):
             data[:, i_est+1] = np.array(pool.map(f, self.L))
 
         if est == ['TT', 'EE', 'TE']:
-            np.savetxt('output/HO02_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_TT_EE_TE_only.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise)), data)
+            np.savetxt('output/HO02_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_TT_EE_TE_only_%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise), str(self.N_phi)), data)
         elif est == ['TB', 'EB']:
-            np.savetxt('output/HO02_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_TB_EB_only.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise)), data)
+            np.savetxt('output/HO02_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_TB_EB_only_%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise), str(self.N_phi)), data)
         else:
             np.savetxt(self.var_out, data)
 
@@ -424,9 +425,9 @@ class lensing_estimator(object):
         data[:, -1] = n_mv
 
         if est == ['TT', 'EE', 'TE']:
-            np.savetxt('output/HO02_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_TT_EE_TE_only.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise)), data)
+            np.savetxt('output/HO02_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_TT_EE_TE_only_%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise), str(self.N_phi)), data)
         elif est == ['TB', 'EB']:
-            np.savetxt('output/HO02_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_TB_EB_only.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise)), data)
+            np.savetxt('output/HO02_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_TB_EB_only_%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise), str(self.N_phi)), data)
         else:
             np.savetxt(self.covar_out, data)
 
@@ -551,30 +552,50 @@ if __name__ == '__main__':
     lMinT = 30.
     lMaxT = 3.5e3
     lMaxP = 3.5e3
+    # """
 
-    cmb = Cell_cmb(beam=beam, noise_t=noise_t, noise_p=noise_p, lMin=lMinT,
-                   lMaxT=lMaxT, lMaxP=lMaxP)
-    # cmb = Cell_cmb(beam=7., noise_t=27., noise_p=40*np.sqrt(2.), lMin=30.,
-    #                lMaxT=3.e3, lMaxP=5.e3)
+    HO02_ref = {"name": "HO02_ref", "lMin": 30., "lMaxT": 3000., "lMaxP": 3000.,
+            "beam": 4., "noise_t": 1., "noise_p": 1.*np.sqrt(2)}
+
+    AdvACT = {"name": "AdvACT", "lMin": 30., "lMaxT": 6000., "lMaxP": 6000.,
+              "beam": 1.4, "noise_t": 10., "noise_p": 10.*np.sqrt(2)}
+
+    SO = {"name": "SO", "lMin": 30., "lMaxT": 3000., "lMaxP": 3000.,
+          "beam": 1.4, "noise_t": 8., "noise_p": 8.*np.sqrt(2)}
+
+    CMBS4 = {"name": "CMBS4", "lMin": 30., "lMaxT": 3000., "lMaxP": 3000.,
+             "beam": 1., "noise_t": 1., "noise_p": 1.*np.sqrt(2)}
+
+    Planck_smica = {"name": "Planck", "lMin": 30., "lMaxT": 3000., "lMaxP": 3000.,
+                    "beam": 5., "noise_t": 35., "noise_p": 60.}
+
+    custom = {"name": "Ideal", "lMin": 30., "lMaxT": 3.e3, "lMaxP": 3.e3,
+              "beam": 0., "noise_t": 0., "noise_p": 0.}
+
+    time0 = time()
+
+    exp = Planck_smica
+    cmb = Cell_cmb(exp)
+
     l_est = lensing_estimator(cmb)
     # l_est.cmb.plot_cell()
     # ell = np.linspace(2, int(lMaxP), int(lMaxP)-1)
-    # l_est.cmb.plot_cell_2(ell)
+    l_est.cmb.plot_cell_2()
     # est = ['TT']
     est = ['TT', 'EE', 'TE', 'TB', 'EB']
     # est = ['TB', 'EB']
     # est = ['TT', 'EE', 'TE']
     l_est.calc_var(est)
-    l_est.interp_var(est)
+    # l_est.interp_var(est)
     # l_est.plot_var(est)
     # l_est.comp_manu()
-    l_est.calc_cov(est)
+    # l_est.calc_cov(est)
 
-    l_est.interp_cov(est)
-    l_est.plot_cov(est)
-    l_est.plot_cov_pair()
+    # l_est.interp_cov(est)
+    # l_est.plot_cov(est)
+    # l_est.plot_cov_pair()
 
-    l_est.plot_corrcoef(est)
+    # l_est.plot_corrcoef(est)
     # l_est.comp_manu()
     # """
     print(time()-time0)

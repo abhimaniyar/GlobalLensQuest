@@ -27,7 +27,7 @@ class lensing_estimator(object):
         self.N_phi = 50  # number of steps for angular integration steps
         # reduce to 50 if you need around 0.6% max accuracy till L = 3000
         # from 200 to 400, there is just 0.03% change in the noise curves till L=3000
-        self.var_out = 'output/True_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise))
+        self.var_out = 'output/True_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise), str(self.N_phi))
 
 
     """
@@ -480,7 +480,7 @@ class lensing_estimator(object):
         # ax.plot(L, (L*(L+1))**2*clphiphi/2./np.pi, 'k-', lw=2.5, label=r'signal')
 
         est = ['d1', 'd2', 'd']
-        lbl = ['TMV TT-EE-TE', 'TMV TB-EB', 'TMV combined']
+        lbl = ['GMV TT-EE-TE', 'GMV TB-EB', 'GMV combined']
 
         nest = len(est)
         for iEst in range(nest):

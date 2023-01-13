@@ -26,25 +26,25 @@ class Cell_cmb(object):
         # unlensed TT, EE, TE
         # nolens = np.loadtxt('input/CAMB/qe_lenspotentialCls.dat')
         # lensed gradient spectra give lower bias
-        nolens = np.loadtxt('input/CAMB/qe_lensed_gradient_Cls.dat')
-        fac = self.dl_to_cl(nolens[:, 0])
-        nolens[:, 1] *= fac/cmb_out
-        nolens[:, 2] *= fac/cmb_out
-        nolens[:, 3] *= fac/cmb_out
-        nolens[:, 4] *= fac/cmb_out
-        nolens[:, 5] *= fac/cmb_out
+        lensgrad = np.loadtxt('input/CAMB/qe_lensed_gradient_Cls.dat')
+        fac = self.dl_to_cl(lensgrad[:, 0])
+        lensgrad[:, 1] *= fac/cmb_out
+        lensgrad[:, 2] *= fac/cmb_out
+        lensgrad[:, 3] *= fac/cmb_out
+        lensgrad[:, 4] *= fac/cmb_out
+        lensgrad[:, 5] *= fac/cmb_out
 
         # corrul = 0.8*np.sqrt(nolens[:, 1]*nolens[:, 2])
         # interpolate
-        self.unlensedTT = interp1d(nolens[:, 0], nolens[:, 1], kind='linear',
+        self.lensgradTT = interp1d(lensgrad[:, 0], lensgrad[:, 1], kind='linear',
                                    bounds_error=False, fill_value=0.)
-        self.unlensedEE = interp1d(nolens[:, 0], nolens[:, 2], kind='linear',
+        self.lensgradEE = interp1d(lensgrad[:, 0], lensgrad[:, 2], kind='linear',
                                    bounds_error=False, fill_value=0.)
-        self.unlensedBB = interp1d(nolens[:, 0], nolens[:, 3], kind='linear',
+        self.lensgradBB = interp1d(lensgrad[:, 0], lensgrad[:, 3], kind='linear',
                                    bounds_error=False, fill_value=0.)
         # self.unlensedTE = interp1d(nolens[:, 0], nolens[:, 4], kind='linear',
         #                            bounds_error=False, fill_value=0.)
-        self.unlensedTE = interp1d(nolens[:, 0], nolens[:, 5], kind='linear',
+        self.lensgradTE = interp1d(lensgrad[:, 0], lensgrad[:, 5], kind='linear',
                                    bounds_error=False, fill_value=0.)
         # self.unlensedTE = interp1d(nolens[:, 0], corrul, kind='linear',
         #                            bounds_error=False, fill_value=0.)
@@ -71,7 +71,7 @@ class Cell_cmb(object):
         #                          bounds_error=False, fill_value=0.)
 
         # total lensed : lens+noise
-        print 'calculating total power spectra'
+        print('calculating total power spectra')
         self.totalTT = lambda l: self.lensedTT(l) + self.detectorNoise(l, self.sensitivity_t) + self.artificialNoiseTT(l)
         self.totalEE = lambda l: self.lensedEE(l) + self.detectorNoise(l, self.sensitivity_p)
         self.totalBB = lambda l: self.lensedBB(l) + self.detectorNoise(l, self.sensitivity_p)
@@ -99,7 +99,7 @@ class Cell_cmb(object):
         return noise
 
     def plot_cell(self):
-        nolens = np.loadtxt('input/CAMB/qe_lenspotentialCls.dat')
+        nolens = np.loadtxt('input/CAMB/Julien_lenspotentialCls.dat')
         # np.loadtxt('../CAMB/qe_nolens_scalCls.dat')
         ell = nolens[:, 0]
         noise_t = self.detectorNoise(ell, self.sensitivity_t)
@@ -107,16 +107,16 @@ class Cell_cmb(object):
         fig = plt.figure()
         ax = fig.add_subplot(111)
         # """
-        ax.plot(ell, ell*(ell+1)*self.unlensedTT(ell)/(2*np.pi), 'k', lw=1.5,
-                label=r'TT')
+        # ax.plot(ell, ell*(ell+1)*self.unlensedTT(ell)/(2*np.pi), 'k', lw=1.5,
+        #         label=r'TT')
         ax.plot(ell, ell*(ell+1)*noise_t/(2*np.pi), 'k--', lw=1.5,
                 label=r'noise TT')
-        ax.plot(ell, ell*(ell+1)*self.unlensedEE(ell)/(2*np.pi), 'b', lw=1.5,
-                label=r'EE')
+        # ax.plot(ell, ell*(ell+1)*self.unlensedEE(ell)/(2*np.pi), 'b', lw=1.5,
+        #         label=r'EE')
         ax.plot(ell, ell*(ell+1)*noise_p/(2*np.pi), 'b--', lw=1.5,
                 label=r'noise EE')
-        ax.plot(ell, ell*(ell+1)*self.unlensedTE(ell)/(2*np.pi), 'r', lw=1.5,
-                label=r'TE')
+        # ax.plot(ell, ell*(ell+1)*self.unlensedTE(ell)/(2*np.pi), 'r', lw=1.5,
+        #         label=r'TE')
         """
         ax.plot(ell, ell*(ell+1)*self.unlensedBB(ell)/(2*np.pi), 'g', lw=1.5,
                 label=r'BB')
@@ -203,8 +203,8 @@ class Cell_cmb(object):
         fig = plt.figure(14)
         ax = fig.add_subplot(111)
         # """
-        print self.lensedTT(np.array([100., 500., 1000., 2000., 3500., 5000.]))
-        print self.totalTT(np.array([100., 500., 1000., 2000., 3500., 5000.]))
+        print(self.lensedTT(np.array([100., 500., 1000., 2000., 3500., 5000.])))
+        print(self.totalTT(np.array([100., 500., 1000., 2000., 3500., 5000.])))
         ax.plot(ell2, ell2*(ell2+1)*self.totalTT(ell2)/(2*np.pi), 'k', lw=1.5,
                 label=r'TT')
         # ax.plot(ell2, ell2*(ell2+1)*noise_t/(2*np.pi), 'k--', lw=1.5,

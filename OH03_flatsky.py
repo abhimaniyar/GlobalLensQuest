@@ -29,8 +29,8 @@ class oh03_lensing_estimator(object):
         self.N_phi = 50  # number of steps for angular integration steps
         # reduce to 50 if you need around 0.6% max accuracy till L = 3000
         # from 200 to 400, there is just 0.03% change in the noise curves till L=3000
-        self.lambda_out = 'output/OH03_flatsky_lambda_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise))
-        self.covar_out = 'output/OH03_flatsky_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise))
+        self.lambda_out = 'output/OH03_flatsky_lambda_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise), str(self.N_phi))
+        self.covar_out = 'output/OH03_flatsky_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_%s.txt' % (self.name, str(self.cmb.lMin), str(self.cmb.lMaxT), str(self.cmb.lMaxP), str(self.beam), str(self.noise), str(self.N_phi))
 
     """
     L = l1 + l2
@@ -372,7 +372,7 @@ class oh03_lensing_estimator(object):
         data[:, 0] = np.copy(self.L)
         pool = Pool(ncpus=4)
 
-        cov_XY_AB = {}
+        self.cov_XY_AB = {}
 
         n_est = len(est)
         counter = 1
@@ -384,16 +384,16 @@ class oh03_lensing_estimator(object):
                 if (XY == 'TT')*(AB == 'TT') or (XY == 'EE')*(AB == 'EE') or \
                    (XY == 'TB')*(AB == 'TB') or (XY == 'EB')*(AB == 'EB'):
                     print("Covariance for " + XY + "-" + AB + " is variance for " + XY)
-                    cov_XY_AB[XY+XY] = self.lambda_d[XY](self.L)
+                    self.cov_XY_AB[XY+XY] = self.lambda_d[XY](self.L)
                 else:
                     print("Computing covariance for " + XY + "-" + AB)
 
                     def f(l):
                         return self.covariance(l, XY, AB)
 
-                    cov_XY_AB[XY+AB] = np.array(pool.map(f, self.L))
+                    self.cov_XY_AB[XY+AB] = np.array(pool.map(f, self.L))
 
-                data[:, counter] = cov_XY_AB[XY+AB]
+                data[:, counter] = self.cov_XY_AB[XY+AB]
                 counter += 1
 
         cov_TE = interp1d(self.L, data[:, 10], kind='linear', bounds_error=False, fill_value=0.)
@@ -409,7 +409,7 @@ class oh03_lensing_estimator(object):
                     covmat[i_est, i_est] = self.lambda_d[XY](self.L[el])
                 for i2 in range(i_est+1, n_est):
                     AB = est[i2]
-                    covmat[i_est, i2] = covmat[i2, i_est] = cov_XY_AB[XY+AB][el]
+                    covmat[i_est, i2] = covmat[i2, i_est] = self.cov_XY_AB[XY+AB][el]
             # invert the matrix
             try:
                 invcov = np.linalg.inv(covmat)
@@ -439,7 +439,7 @@ class oh03_lensing_estimator(object):
         counter = 1
         for i_est in range(n_est):
             XY = est[i_est]
-            for i2 in range(i_est+1, n_est):
+            for i2 in range(i_est, n_est):
                 AB = est[i2]
                 norm = data[:, counter].copy()
                 self.cov_d[XY+AB] = interp1d(L, norm, kind='linear', bounds_error=False, fill_value=0.)
@@ -481,12 +481,12 @@ class oh03_lensing_estimator(object):
         ax = fig.add_subplot(111)
         for e in range(len(exp)):
             clexp = exp[e]
-            data = np.genfromtxt('output/HO02_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (clexp['name'], str(clexp['lMin']), str(clexp['lMaxT']), str(clexp['lMaxP']), str(clexp['beam']), str(clexp['noise_t'])))
+            data = np.genfromtxt('output/HO02_variance_individual_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_200.txt' % (clexp['name'], str(clexp['lMin']), str(clexp['lMaxT']), str(clexp['lMaxP']), str(clexp['beam']), str(clexp['noise_t'])))
             L = data[:, 0]
 
             interp_HO02_TE = interp1d(L, data[:, 3], kind='quadratic', bounds_error=False, fill_value=0.)
 
-            data2 = np.genfromtxt('output/OH03_flatsky_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (clexp['name'], str(clexp['lMin']), str(clexp['lMaxT']), str(clexp['lMaxP']), str(clexp['beam']), str(clexp['noise_t'])))
+            data2 = np.genfromtxt('output/OH03_flatsky_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_200.txt' % (clexp['name'], str(clexp['lMin']), str(clexp['lMaxT']), str(clexp['lMaxP']), str(clexp['beam']), str(clexp['noise_t'])))
             L2 = data2[:, 0]
 
             interp_OH03_TE = interp1d(L2, data2[:, 10], kind='quadratic', bounds_error=False, fill_value=0.)
@@ -521,11 +521,11 @@ class oh03_lensing_estimator(object):
         ax = fig.add_subplot(111)
         for e in range(len(exp)):
             clexp = exp[e]
-            data = np.genfromtxt('output/HO02_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (clexp['name'], str(clexp['lMin']), str(clexp['lMaxT']), str(clexp['lMaxP']), str(clexp['beam']), str(clexp['noise_t'])))
+            data = np.genfromtxt('output/HO02_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_200.txt' % (clexp['name'], str(clexp['lMin']), str(clexp['lMaxT']), str(clexp['lMaxP']), str(clexp['beam']), str(clexp['noise_t'])))
             L = data[:, 0]
             interp_HO02_mv = interp1d(L, data[:, -1], kind='quadratic', bounds_error=False, fill_value=0.)
 
-            data2 = np.genfromtxt('output/OH03_flatsky_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s.txt' % (clexp['name'], str(clexp['lMin']), str(clexp['lMaxT']), str(clexp['lMaxP']), str(clexp['beam']), str(clexp['noise_t'])))
+            data2 = np.genfromtxt('output/OH03_flatsky_covariance_%s_lmin%s_lmaxT%s_lmaxP%s_beam%s_noise%s_200.txt' % (clexp['name'], str(clexp['lMin']), str(clexp['lMaxT']), str(clexp['lMaxP']), str(clexp['beam']), str(clexp['noise_t'])))
             L2 = data2[:, 0]
 
             interp_OH03_mv = interp1d(L2, data2[:, -1], kind='quadratic', bounds_error=False, fill_value=0.)
@@ -552,6 +552,116 @@ class oh03_lensing_estimator(object):
         ax.set_xlabel(r'$L$', fontsize=22)
         ax.tick_params(axis='both', labelsize=16)
 
+    def plot_cov_pair(self):
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.plot(self.L, self.L*(self.L+1)*np.abs(self.cov_d['TTEE'](self.L))/(2*np.pi), label='TT-EE')
+        ax.plot(self.L, self.L*(self.L+1)*np.abs(self.cov_d['TTTE'](self.L))/(2*np.pi), label='TT-TE')
+        ax.plot(self.L, self.L*(self.L+1)*np.abs(self.cov_d['EETE'](self.L))/(2*np.pi), label='EE-TE')
+        ax.plot(self.L, self.L*(self.L+1)*np.abs(self.cov_d['TBEB'](self.L))/(2*np.pi), label='TB-EB')
+        ax.legend(loc=2, fontsize='12')
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        ax.set_xlabel(r'$L$', fontsize=16)
+        ax.set_ylabel(r'$L(L+1)|{N_L}^\mathrm{cov}|/2\pi$', fontsize=16)
+        # ax.set_ylim((1.e-15))
+        ax.set_xlim((2., 4.e4))
+        ax.tick_params(axis='both', labelsize=12)
+        plt.show()
+
+    def corr_coef(self, est):
+        self.pear_coeff = {}
+        n_est = len(est)
+        for i_est in range(n_est):
+            XY = est[i_est]
+            for i2 in range(i_est+1, n_est):
+                AB = est[i2]
+                if self.cov_d[XY+AB] == 0:
+                    break
+                else:
+                    # np.seterr(divide='raise', invalid='raise')
+                    # print XY, AB, self.N_d[XY](self.L), self.N_d[AB](self.L)
+                    numerator = self.cov_d[XY+AB](self.L)
+                    # denominator = np.sqrt(self.cov_XY_AB[XY+XY]*self.cov_XY_AB[AB+AB])
+                    denominator = np.sqrt(self.cov_d[XY+XY](self.L)*self.cov_d[AB+AB](self.L))
+                    # result[:, counter] = numerator/denominator
+                    self.pear_coeff[XY+AB] = numerator/denominator
+                    # print counter, XY+AB
+        return self.pear_coeff
+
+    def plot_corrcoef(self, est):
+        pear = self.corr_coef(est)
+        pairs = ['TT-EE', 'TT-TE', 'EE-TE', 'TB-EB']
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.plot(self.L, np.abs(pear['TTEE']), label='TT-EE')
+        ax.plot(self.L, np.abs(pear['TTTE']), label='TT-TE')
+        ax.plot(self.L, np.abs(pear['EETE']), label='EE-TE')
+        ax.plot(self.L, np.abs(pear['TBEB']), label='TB-EB')
+        # for i in range(4):
+        #     ax.plot(self.L, pear[:, i], label=pairs[i])
+        ax.legend(prop={'size': 14}, frameon=False)
+        # ax.set_xscale('log')
+        # ax.set_yscale('log')
+        ax.set_xlabel(r'$L$', fontsize=16)
+        ax.set_ylabel(r'$|{N_{XY}}(L)| / \sqrt{{N_{XX}(L)} \times {N_{YY}(L)}}$', fontsize=16)
+        ax.set_ylim(ymin=-0.001)
+        ax.set_xlim((2., self.l1Max))
+        ax.set_xscale('log')
+        ax.tick_params(axis='both', labelsize=14)
+        plt.show()
+
+
+def tecorr_comparison(exp):
+    est = ['TT', 'EE', 'TE', 'TB', 'EB']
+    lines = ["-", "--", "-.", ":"]
+    cl = ["b", "r", "g"]
+    # custom_lines = [Line2D([0], [0], color='b'), Line2D([0], [0], color='r')]
+    fig = plt.figure()
+    ax = fig.add_subplot(111)    
+    for e in range(len(exp)):
+        exp1 = exp[e]
+        clexp = Cell_cmb(exp1)
+
+        ho02_est = ho.lensing_estimator(clexp)
+        # ho02_est.calc_var(est)
+        ho02_est.interp_var(est)
+        # ho02_est.calc_cov(est)
+        ho02_est.interp_cov(est)
+        # ho02_est.plot_cov_pair()
+        # ho02_est.plot_corrcoef(est)
+        a = ho02_est.corr_coef(est)
+        eete1 = a['EETE']
+        ttte1 = a['TTTE']
+
+        oh_est = oh03_lensing_estimator(clexp)
+        # oh_est.calc_lambda(est)
+        oh_est.interp_lambda(est)
+        # oh_est.calc_cov(est)
+        oh_est.interp_cov(est)
+        b = oh_est.corr_coef(est)
+        eete2 = b['EETE']
+        ttte2 = b['TTTE']
+
+        ax.plot(oh_est.L, ttte2/ttte1, cl[e], ls=lines[0], label=exp1['name']+' TE-TT')
+        ax.plot(oh_est.L, np.abs(eete2/eete1), cl[e], ls=lines[1], label=exp1['name']+' TE-EE')
+
+    textstr = '\n'.join((r'$r=r_{OH03}/r_{HO02}$',
+                     r'$r_{X} = {Cov(TE-TT/EE)}^X(L)| / \sqrt{{N_{TE}^X(L)} \times {N_{TT/EE}^X(L)}}$'))
+    ax.text(2., 1.13, textstr, fontsize=11)  # , verticalalignment='top', bbox=props)
+    ax.legend(prop={'size': 17}, loc='upper left', ncol=len(exp), frameon=False,
+              labelspacing=0.2)
+    ax.set_xscale('log')
+    # ax.set_yscale('log')
+    ax.set_xlim(1.0, 3e3)
+    ax.set_ylim(ymin=0.9, ymax=1.2)
+    # ax.hlines(y=1, xmin=min(L_p), xmax=max(L_p))  # , color='k--')
+    ax.set_ylabel(r'$r$',
+                  fontsize=22)
+    ax.set_xlabel(r'$L$', fontsize=22)
+    ax.tick_params(axis='both', labelsize=22)
+
+
 if __name__ == '__main__':
     import time
     # import imp
@@ -569,12 +679,12 @@ if __name__ == '__main__':
              "beam": 1.4, "noise_t": 10., "noise_p": 10.*np.sqrt(2)}
 
     SO = {"name": "SO", "lMin": 30., "lMaxT": 3000., "lMaxP": 3000.,
-             "beam": 1.4, "noise_t": 5., "noise_p": 5.*np.sqrt(2)}
+          "beam": 1.4, "noise_t": 8., "noise_p": 8.*np.sqrt(2)}
 
     CMBS4 = {"name": "CMBS4", "lMin": 30., "lMaxT": 3000., "lMaxP": 3000.,
              "beam": 1., "noise_t": 1., "noise_p": 1.*np.sqrt(2)}
 
-    Planck_smica = {"name": "Planck", "lMin": 100., "lMaxT": 2000., "lMaxP": 2000.,
+    Planck_smica = {"name": "Planck", "lMin": 30., "lMaxT": 3000., "lMaxP": 3000.,
                     "beam": 5., "noise_t": 35., "noise_p": 60.}
 
     custom = {"name": "SO_TE_0", "lMin": 30., "lMaxT": 2.e3, "lMaxP": 2.e3,
@@ -582,7 +692,7 @@ if __name__ == '__main__':
 
     time0 = time()
 
-    exp = HO02_ref
+    exp = SO
     cmb = Cell_cmb(exp)
 
     # expind = np.array([10., 50., 500., 1500.])
@@ -602,22 +712,48 @@ if __name__ == '__main__':
     fam = "serif"
     plt.rcParams["font.family"] = fam
 
-    ho02_est = ho.lensing_estimator(cmb)
+    # ho02_est = ho.lensing_estimator(cmb)
+    # oh_est = oh03_lensing_estimator(cmb)
+    """
 
-    ho02_est.calc_var(est)
+    # ho02_est.calc_var(est)
     ho02_est.interp_var(est)
-    ho02_est.calc_cov(est)
+    # ho02_est.calc_cov(est)
     ho02_est.interp_cov(est)
-
-    oh_est = oh03_lensing_estimator(cmb)
-    oh_est.calc_lambda(est)
+    # ho02_est.plot_cov_pair()
+    # ho02_est.plot_corrcoef(est)
+    a = ho02_est.corr_coef(est)
+    eete1 = a['EETE']
+    ttte1 = a['TTTE']
+    # """
+    """
+    # oh_est.calc_lambda(est)
     oh_est.interp_lambda(est)
-    oh_est.calc_cov(est)
+    # oh_est.calc_cov(est)
     oh_est.interp_cov(est)
+    b = oh_est.corr_coef(est)
+    eete2 = b['EETE']
+    ttte2 = b['TTTE']
+    plt.figure()
+    textstr = '\n'.join((r'$r=r_{OH03}/r_{HO02}$',
+                         r'$r_{X} = {Cov(TE-TT/EE)}^X(L)| / \sqrt{{N_{TE}^X(L)} \times {N_{TT/EE}^X(L)}}$'))
+    plt.semilogx(oh_est.L, np.abs(eete2/eete1), 'r', label='TE-EE')
+    plt.semilogx(oh_est.L, ttte2/ttte1, 'b', label='TE-TT')
+    # plt.ylabel(r'$|{Cov(TE-TT/EE)}(L)| / \sqrt{{N_{TE}(L)} \times {N_{TT/EE}(L)}}$', fontsize=16)
+    plt.ylabel(r'$r$', fontsize=16)
+    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+    plt.text(1., 1.15, textstr, fontsize=10)  # , verticalalignment='top', bbox=props)
+    plt.legend()
+    # """
+    multexp = [Planck_smica, SO, CMBS4]
 
-    multexp = [Planck_smica, SO, HO02_ref]
+    # oh_est.plot_TE_comparison(multexp)
+    # oh_est.plot_MV_comparison(multexp)
 
-    oh_est.plot_TE_comparison(multexp)
-    oh_est.plot_MV_comparison(multexp)
+    # oh_est.plot_cov_pair()
+    # oh_est.plot_corrcoef(est)
 
+    # """
+    multexp = [SO, CMBS4]
+    tecorr_comparison(multexp)
     print(time()-time0)
